@@ -11,7 +11,7 @@
     "hot",
     "reload"
   ],
-   "repository": {
+  "repository": {
     "type": "git",
     "url": "git+https://github.com/Putoshi/LeonardoAI-Display.git"
   },
@@ -137,6 +137,7 @@
     "prettier": "^3.2.5",
     "react-refresh": "^0.14.0",
     "react-test-renderer": "^18.2.0",
+    "react-use-face-detection": "^1.0.1",
     "rimraf": "^5.0.5",
     "sass": "^1.70.0",
     "sass-loader": "^14.1.0",
