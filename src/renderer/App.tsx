@@ -3,6 +3,7 @@ import icon from '../../assets/icon.svg';
 import './App.css';
 
 import WebcamComponent from './components/WebcamComponent';
+
 function Hello() {
   return (
     <div>

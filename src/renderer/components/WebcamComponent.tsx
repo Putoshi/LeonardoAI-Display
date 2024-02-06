@@ -6,21 +6,23 @@ import { Camera } from '@mediapipe/camera_utils';
 const width = 500;
 const height = 500;
 
-const WebcamComponent = (): JSX.Element => {
-  const { webcamRef, boundingBox, isLoading, detected, facesDetected } = useFaceDetection({
-    faceDetectionOptions: {
-      model: 'short',
-    },
-    faceDetection: new FaceDetection.FaceDetection({
-      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`,
-    }),
-    camera: ({ mediaSrc, onFrame }: CameraOptions) =>
-      new Camera(mediaSrc, {
-        onFrame,
-        width,
-        height,
+function WebcamComponent() {
+  const { webcamRef, boundingBox, isLoading, detected, facesDetected } =
+    useFaceDetection({
+      faceDetectionOptions: {
+        model: 'short',
+      },
+      faceDetection: new FaceDetection.FaceDetection({
+        locateFile: (file) =>
+          `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`,
       }),
-  });
+      camera: ({ mediaSrc, onFrame }: CameraOptions) =>
+        new Camera(mediaSrc, {
+          onFrame,
+          width,
+          height,
+        }),
+    });
 
   return (
     <div>
