@@ -37,6 +37,22 @@ function WebcamComponent() {
         }),
     });
 
+  const saveScreenshot = () => {
+    if (webcamRef) {
+      const webcamCurrent = webcamRef.current;
+      if (webcamCurrent && typeof webcamCurrent.getScreenshot === 'function') {
+        const screenshot = webcamCurrent.getScreenshot();
+        if (screenshot) {
+          console.log(screenshot);
+          window.electron.ipcRenderer.sendMessage(
+            'save-screenshot',
+            screenshot,
+          );
+        }
+      }
+    }
+  };
+
   useEffect(() => {
     if (detectionTimeoutRef.current) {
       clearTimeout(detectionTimeoutRef.current);
@@ -86,6 +102,7 @@ function WebcamComponent() {
             ref={webcamRef}
             // mirrored={mirror}
             forceScreenshotSourceSize
+            screenshotFormat="image/jpeg"
             style={{
               height,
               width,
@@ -95,6 +112,9 @@ function WebcamComponent() {
         </div>
         <button type="button" onClick={toggleMirror}>
           Toggle Mirror
+        </button>
+        <button type="button" onClick={saveScreenshot}>
+          Save Image
         </button>
         faceDetected: {faceDetected ? 'true' : 'false'}
       </div>
