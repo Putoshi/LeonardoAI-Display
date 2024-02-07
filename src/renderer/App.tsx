@@ -8,7 +8,7 @@ function TopView() {
   return (
     <div>
       <WebcamComponent />
-      <div className="TopView">
+      {/* <div className="TopView">
         <img width="200" alt="icon" src={icon} />
       </div>
       <h1>electron-react-boilerplate</h1>
@@ -37,7 +37,7 @@ function TopView() {
             Donate
           </button>
         </a>
-      </div>
+      </div> */}
     </div>
   );
 }

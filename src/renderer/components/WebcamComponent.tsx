@@ -121,7 +121,6 @@ function WebcamComponent() {
         <p>{`Loading: ${isLoading}`}</p>
         <p>{`Face Detected: ${detected}`}</p>
         <p>{`Number of faces detected: ${facesDetected}`}</p>
-
         <button type="button" onClick={toggleMirror}>
           Toggle Mirror
         </button>
