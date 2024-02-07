@@ -70,46 +70,58 @@ function WebcamComponent() {
 
   return (
     <div>
-      <p>{`Loading: ${isLoading}`}</p>
-      <p>{`Face Detected: ${detected}`}</p>
-      <p>{`Number of faces detected: ${facesDetected}`}</p>
-
       <div>
         <div
           style={{
-            width,
-            height,
             position: 'relative',
-            transform: mirror ? 'scaleX(-1)' : 'none',
+            width: '100vw',
+            height: '100vw',
           }}
         >
-          {boundingBox.map((box, index) => (
-            <div
-              key={`${index + 1}`}
+          <div
+            style={{
+              // width,
+              // height,
+              width: '100vw',
+              height: '100vw',
+              position: 'relative',
+              transform: mirror ? 'scaleX(-1)' : 'none',
+            }}
+          >
+            {boundingBox.map((box, index) => (
+              <div
+                key={`${index + 1}`}
+                style={{
+                  border: '4px solid red',
+                  position: 'absolute',
+                  top: `${box.yCenter * 100}%`,
+                  left: `${box.xCenter * 100}%`,
+                  width: `${box.width * 100}%`,
+                  height: `${box.height * 100}%`,
+                  // transform: mirror ? 'scaleX(-1)' : 'none',
+                  zIndex: 1,
+                }}
+              />
+            ))}
+            <Webcam
+              ref={webcamRef}
+              // mirrored={mirror}
+              forceScreenshotSourceSize
+              screenshotFormat="image/jpeg"
               style={{
-                border: '4px solid red',
+                // height,
+                // width,
+                width: '100%',
+                height: '100%',
                 position: 'absolute',
-                top: `${box.yCenter * 100}%`,
-                left: `${box.xCenter * 100}%`,
-                width: `${box.width * 100}%`,
-                height: `${box.height * 100}%`,
-                // transform: mirror ? 'scaleX(-1)' : 'none',
-                zIndex: 1,
               }}
             />
-          ))}
-          <Webcam
-            ref={webcamRef}
-            // mirrored={mirror}
-            forceScreenshotSourceSize
-            screenshotFormat="image/jpeg"
-            style={{
-              height,
-              width,
-              position: 'absolute',
-            }}
-          />
+          </div>
         </div>
+        <p>{`Loading: ${isLoading}`}</p>
+        <p>{`Face Detected: ${detected}`}</p>
+        <p>{`Number of faces detected: ${facesDetected}`}</p>
+
         <button type="button" onClick={toggleMirror}>
           Toggle Mirror
         </button>

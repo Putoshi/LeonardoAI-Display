@@ -4,15 +4,15 @@ import './App.css';
 
 import WebcamComponent from './components/WebcamComponent';
 
-function Hello() {
+function TopView() {
   return (
     <div>
       <WebcamComponent />
-      <div className="Hello">
+      <div className="TopView">
         <img width="200" alt="icon" src={icon} />
       </div>
       <h1>electron-react-boilerplate</h1>
-      <div className="Hello">
+      <div className="TopView">
         <a
           href="https://electron-react-boilerplate.js.org/"
           target="_blank"
@@ -46,7 +46,7 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Hello />} />
+        <Route path="/" element={<TopView />} />
       </Routes>
     </Router>
   );
