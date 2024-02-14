@@ -22,6 +22,14 @@ import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 import * as util from './util';
+import AIImageFetcher from './AIImageFetcher';
+
+// 環境設定をロード
+const environmentConfig = require(`../../env/env.${process.env.NODE_ENV}.js`);
+
+// AIFetcherクラスのインスタンスを作成
+const aiImageFetcher = new AIImageFetcher();
+aiImageFetcher.environmentConfig = environmentConfig;
 
 class AppUpdater {
   constructor() {
@@ -57,6 +65,13 @@ ipcMain.on('save-screenshot', (event, data) => {
       'base64',
     );
   }
+});
+
+// AI画像の取得リクエスト
+// IPCイベントリスナー内でAIFetcherを使用
+ipcMain.on('get-aiimage', async (event) => {
+  await aiImageFetcher.getAIImageRequest();
+  event.reply('get-aiimage-reply', 'Image fetch initiated');
 });
 
 if (process.env.NODE_ENV === 'production') {
