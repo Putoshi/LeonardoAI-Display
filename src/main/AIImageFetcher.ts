@@ -2,7 +2,7 @@ import path from 'path';
 import { app } from 'electron';
 import ImageSaver from './ImageSaver';
 
-export default　class AIImageFetcher {
+export default class AIImageFetcher {
   environmentConfig: any;
 
   // コンストラクターを削除し、環境設定を直接クラスプロパティに設定
