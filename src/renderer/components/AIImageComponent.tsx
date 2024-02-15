@@ -1,8 +1,9 @@
 import React from 'react';
-import env from '../../../env/env.development';
+// import env from '../../../env/env.development';
+
 // const env = process.env;
 
-type AIImageComponentProps = {};
+// type AIImageComponentProps = {};
 
 // const getAIImage = async (generationId) => {
 //   const options = {
@@ -23,7 +24,7 @@ type AIImageComponentProps = {};
 //         } else {
 //           console.log(response); // 最終的なレスポンスを処理
 //         }
-//       })
+//       })ß
 //       .catch((err) => console.error(err));
 //   };
 
@@ -32,6 +33,7 @@ type AIImageComponentProps = {};
 
 const getAIImageRequest = async () => {
   window.electron.ipcRenderer.sendMessage('get-aiimage');
+
   // console.log('getAIImageRequest');
   // // console.log(env.LEONARDAI_API_URL);
   // const options = {

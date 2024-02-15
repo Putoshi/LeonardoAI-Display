@@ -1,6 +1,7 @@
 import path from 'path';
 import { app } from 'electron';
 import ImageSaver from './ImageSaver';
+import LeonardoAIOptions from './LeonardoAIOptions';
 
 export default class AIImageFetcher {
   environmentConfig: any;
@@ -16,12 +17,7 @@ export default class AIImageFetcher {
         'content-type': 'application/json',
         authorization: `Bearer ${this.environmentConfig.LEONARDAI_API_KEY}`,
       },
-      body: JSON.stringify({
-        height: 512,
-        modelId: '6bef9f1b-29cb-40c7-b9df-32b51c1f67d3',
-        prompt: 'An oil painting of a cat',
-        width: 512,
-      }),
+      body: JSON.stringify(LeonardoAIOptions),
     };
 
     fetch(`${this.environmentConfig.LEONARDAI_API_URL}/generations`, options)
@@ -55,12 +51,12 @@ export default class AIImageFetcher {
           setTimeout(fetchImage, 3000); // 3秒後に再取得
         } else {
           console.log(data.generations_by_pk.generated_images);
-          data.generations_by_pk.generated_images.forEach((image) => {
+          data.generations_by_pk.generated_images.forEach((_image) => {
             const defaultPath = path.join(
               app.getPath('downloads'),
-              `${image.id}.jpg`,
+              `${_image.id}.jpg`,
             );
-            ImageSaver.saveImage(image.url, defaultPath);
+            ImageSaver.saveImage(_image.url, defaultPath);
           });
         }
       } catch (err) {
