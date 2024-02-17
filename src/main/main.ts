@@ -25,11 +25,11 @@ import * as util from './util';
 import AIImageFetcher from './AIImageFetcher';
 
 // 環境設定をロード
-const environmentConfig = require(`../../env/env.${process.env.NODE_ENV}.js`);
+const environmentConfig = require(`../../env/env.${process.env.NODE_ENV}.js`); // eslint-disable-line
 
 // AIFetcherクラスのインスタンスを作成
 const aiImageFetcher = new AIImageFetcher();
-aiImageFetcher.environmentConfig = environmentConfig;
+aiImageFetcher.setEnvironmentConfig(environmentConfig);
 
 class AppUpdater {
   constructor() {
@@ -114,8 +114,8 @@ const createWindow = async () => {
 
   mainWindow = new BrowserWindow({
     show: false,
-    width: 1080/2,
-    height: 1920/2,
+    width: 1080 / 2,
+    height: 1920 / 2,
     icon: getAssetPath('icon.png'),
     webPreferences: {
       // nodeIntegration: true,
