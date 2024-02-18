@@ -80,6 +80,10 @@
     }
   },
   "dependencies": {
+    "@tensorflow-models/coco-ssd": "^2.2.3",
+    "@tensorflow/tfjs": "^4.17.0",
+    "@tensorflow/tfjs-backend-cpu": "^4.17.0",
+    "@tensorflow/tfjs-backend-webgpu": "^4.17.0",
     "axios": "^1.6.7",
     "electron-debug": "^3.2.0",
     "electron-log": "^5.1.1",
