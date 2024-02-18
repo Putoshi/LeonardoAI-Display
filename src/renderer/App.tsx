@@ -4,11 +4,13 @@ import './App.css';
 
 import WebcamComponent from './components/WebcamComponent';
 import AIImageComponent from './components/AIImageComponent';
+import HumanDetection from './components/HumanDetection';
 
 function TopView() {
   return (
     <div>
-      <WebcamComponent />
+      <HumanDetection />
+      {/* <WebcamComponent /> */}
       <AIImageComponent />
       {/* <div className="TopView">
         <img width="200" alt="icon" src={icon} />

@@ -14,7 +14,7 @@ const height = 500;
 function WebcamComponent() {
   const [mirror, setMirror] = useAtom(mirrorAtom);
   const [faceDetected, setFaceDetected] = useAtom(faceDetectedAtom);
-  const detectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const detectionTimeoutRef = useRef<NodeJS.Timeout | null>(null); // eslint-disable-line
 
   const toggleMirror = () => {
     setMirror(!mirror);

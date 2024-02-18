@@ -2,6 +2,7 @@ import https from 'https';
 import fs from 'fs';
 
 export default class ImageSaver {
+  // 画像をURLからGETして保存する関数
   static saveImage(url: string, path: string): Promise<void> {
     return new Promise((resolve, reject) => {
       https
@@ -22,17 +23,19 @@ export default class ImageSaver {
     });
   }
 
+  // Base64文字列から画像を保存する関数
   static saveImageFromArrayBuffer(
     arraybuffer: string,
     path: string,
   ): Promise<void> {
     return new Promise((resolve, reject) => {
-      fs.writeFileSync(path, arraybuffer, 'base64', (err) => {
-        console.log(err);
+      try {
+        fs.writeFileSync(path, arraybuffer, 'base64');
+        resolve();
+      } catch (err) {
+        console.error(err);
         reject(err);
-      });
-
-      resolve();
+      }
     });
   }
 }
