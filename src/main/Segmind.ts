@@ -4,6 +4,7 @@ import axios from 'axios';
 import { app } from 'electron';
 import ImageSaver from './ImageSaver';
 import { Faceswap, FaceswapType } from 'segmind-npm';
+import { getTmpFolderPath } from './LocalPath';
 
 interface EnvironmentConfig {
   SEGMINF_API_KEY: string;
@@ -70,7 +71,7 @@ export default class Segmind {
 
         ImageSaver.saveImageFromArrayBuffer(
           response.data,
-          path.join(app.getPath('downloads'), 'outputFaceImage.jpg'),
+          path.join(getTmpFolderPath(), 'outputFaceImage.jpg'),
         );
         console.log('FaceSwap完了');
       } catch (error: any) {

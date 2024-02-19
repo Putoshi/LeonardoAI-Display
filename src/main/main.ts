@@ -23,6 +23,8 @@ import log from 'electron-log';
 import MenuBuilder from './menu';
 import * as util from './util';
 import AIImageFetcher from './AIImageFetcher';
+import ImageSlicer from './ImageSlicer';
+import { getTmpFolderPath } from './LocalPath';
 
 // 環境設定をロード
 const environmentConfig = require(`../../env/env.${process.env.NODE_ENV}.js`); // eslint-disable-line
@@ -48,10 +50,7 @@ ipcMain.on('ipc-example', async (event, arg) => {
 });
 
 ipcMain.on('save-screenshot', (event, data) => {
-  const defaultPath = path.join(
-    app.getPath('downloads'),
-    `image-${Date.now()}.jpg`,
-  );
+  const defaultPath = path.join(getTmpFolderPath(), `image-${Date.now()}.jpg`);
   const filePath = dialog.showSaveDialogSync({
     buttonLabel: 'Save image',
     defaultPath,
@@ -70,9 +69,89 @@ ipcMain.on('save-screenshot', (event, data) => {
 // AI画像の取得リクエスト
 // IPCイベントリスナー内でAIFetcherを使用
 ipcMain.on('get-aiimage', async (event) => {
-  await aiImageFetcher.getAIImageRequest();
-  event.reply('get-aiimage-reply', 'Image fetch initiated');
+  const outputFolder = await aiImageFetcher.getAIImageRequest();
+  console.log('outputFolder', outputFolder);
+
+  // 画像を分割して保存
+  const sliceImgPartical = async (_srcPath: string, _outputPath: string) => {
+    const image = await require('sharp')(_srcPath).metadata();
+    const width = image.width * 0.6; // 横幅の60%
+    const height = image.height * 0.6; // 縦幅の60%
+    const positions = [
+      { top: 0, left: 0 }, // 左上
+      { top: 0, left: image.width - width }, // 右上
+      { top: image.height - height, left: 0 }, // 左下
+      { top: image.height - height, left: image.width - width }, // 右下
+    ];
+
+    await Promise.all(
+      positions.map(async (pos, index) => {
+        const outputPathModified = _outputPath.replace(
+          '.jpg',
+          `_${index + 1}.jpg`,
+        );
+        return ImageSlicer.crop(
+          _srcPath,
+          outputPathModified,
+          pos.top,
+          pos.left,
+          width,
+          height,
+        );
+      }),
+    );
+  };
+
+  async function detectImage(imagePath: string) {
+    const base64Image = fs.readFileSync(imagePath, { encoding: 'base64' });
+    const dataUrl = `data:image/jpeg;base64,${base64Image}`;
+
+    // console.log('mainWindow', mainWindow);
+
+    if (mainWindow) {
+      mainWindow.webContents.send('humancheck', dataUrl);
+    }
+  }
+
+  const performHumanDetection = async (imagePath: string) => {
+    // ここにHumanDetectionの人間判定のロジックを実装
+    let imagePathModified = '';
+
+    for (let i = 1; i <= 4; i++) {
+      imagePathModified = imagePath.replace('.jpg', `_${i}.jpg`);
+      console.log(`人間判定を実行: ${imagePathModified}`);
+    }
+    detectImage(imagePathModified);
+  };
+
+  // 画像ファイルのリストを取得して、それぞれを分割
+  fs.readdir(outputFolder, (err, files) => {
+    if (err) {
+      console.error('Error fetching files:', err);
+      return;
+    }
+    files.forEach(async (file) => {
+      if (file.endsWith('.jpg')) {
+        const srcPath = path.join(outputFolder, file);
+        const outputPath = srcPath.replace('.jpg', '__.jpg');
+
+        // 画像を分割して保存
+        await sliceImgPartical(srcPath, outputPath);
+        console.log('分割完了');
+        await performHumanDetection(outputPath);
+      }
+    });
+  });
+
+  // event.reply('get-aiimage-reply', 'Image fetch initiated');
 });
+
+// // LeonardoAIの画像取得後の処理
+// ipcMain.on('leonardo-image-fetched', async (event) => {
+//   console.log('leonardo-image-fetched');
+//   // await aiImageFetcher.getAIImageRequest();
+//   // event.reply('get-aiimage-reply', 'Image fetch initiated');
+// });
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');

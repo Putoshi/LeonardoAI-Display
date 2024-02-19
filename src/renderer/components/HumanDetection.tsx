@@ -1,16 +1,31 @@
-import { useRef, useEffect, useState } from 'react';
-import { useFaceDetection } from 'react-use-face-detection';
-import FaceDetection from '@mediapipe/face_detection';
-import baseImg from '../../../assets/test5.jpg';
+import React, { useRef, useEffect, useState } from 'react';
 
 require('@tensorflow/tfjs-backend-cpu');
 require('@tensorflow/tfjs-backend-webgl');
 const cocoSsd = require('@tensorflow-models/coco-ssd');
 
 function HumanDetection() {
+  const [imageSrc, setImageSrc] = useState('../../../assets/test5.jpg');
   const imgRef = useRef(null);
   const [boundingBox, setBoundingBox] = useState([]);
+
   useEffect(() => {
+    const removeListener = window.electron.ipcRenderer.on(
+      'humancheck',
+      (dataUrl) => {
+        console.log('humancheckイベントを受信しました。');
+        // console.log(dataUrl);
+        setImageSrc(dataUrl as string);
+      },
+    );
+
+    return () => {
+      removeListener();
+    };
+  }, []);
+
+  // 画像を変更する関数（例えば、ボタンクリックで呼び出す）
+  const onImageLoaded = () => {
     const img = imgRef.current;
     if (img) {
       cocoSsd
@@ -28,7 +43,13 @@ function HumanDetection() {
           console.error('Error:', error);
         });
     }
-  }, [imgRef]);
+  };
+
+  // 画像を変更する関数（例えば、ボタンクリックで呼び出す）
+  const changeImage = () => {
+    window.electron.ipcRenderer.sendMessage('get-aiimage');
+    // setImageSrc('../../../assets/test4.jpg');
+  };
 
   return (
     <div
@@ -56,6 +77,7 @@ function HumanDetection() {
         crossOrigin="anonymous"
         ref={imgRef}
         alt=""
+        onLoad={onImageLoaded}
         style={{
           position: 'absolute',
           marginLeft: 'auto',
@@ -68,8 +90,11 @@ function HumanDetection() {
           height: '100%',
           objectFit: 'fill',
         }}
-        src={baseImg}
+        src={imageSrc}
       />
+      <button type="button" onClick={changeImage}>
+        画像を変更
+      </button>
     </div>
   );
 }

@@ -11,7 +11,7 @@ function TopView() {
     <div>
       <HumanDetection />
       {/* <WebcamComponent /> */}
-      <AIImageComponent />
+      {/* <AIImageComponent /> */}
       {/* <div className="TopView">
         <img width="200" alt="icon" src={icon} />
       </div>
