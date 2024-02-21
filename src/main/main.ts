@@ -24,6 +24,7 @@ import MenuBuilder from './menu';
 import * as util from './util';
 import AIImageFetcher from './AIImageFetcher';
 import ImageSlicer from './ImageSlicer';
+import Segmind from './Segmind';
 import { getTmpFolderPath } from './LocalPath';
 
 // 環境設定をロード
@@ -75,8 +76,8 @@ ipcMain.on('get-aiimage', async (event) => {
   // 画像を分割して保存
   const sliceImgPartical = async (_srcPath: string, _outputPath: string) => {
     const image = await require('sharp')(_srcPath).metadata();
-    const width = image.width * 0.6; // 横幅の60%
-    const height = image.height * 0.6; // 縦幅の60%
+    const width = image.width * 0.65; // 横幅の65%
+    const height = image.height * 0.65; // 縦幅の65%
     const positions = [
       { top: 0, left: 0 }, // 左上
       { top: 0, left: image.width - width }, // 右上
@@ -102,26 +103,28 @@ ipcMain.on('get-aiimage', async (event) => {
     );
   };
 
-  async function detectImage(imagePath: string) {
-    const base64Image = fs.readFileSync(imagePath, { encoding: 'base64' });
-    const dataUrl = `data:image/jpeg;base64,${base64Image}`;
+  async function detectImage(srcImgPath: string, imagePaths: string[]) {
+    const dataUrls = imagePaths.map((imagePath) => {
+      const base64Image = fs.readFileSync(imagePath, { encoding: 'base64' });
+      return `data:image/jpeg;base64,${base64Image}`;
+    });
 
     // console.log('mainWindow', mainWindow);
 
     if (mainWindow) {
-      mainWindow.webContents.send('humancheck', dataUrl);
+      mainWindow.webContents.send('human-check', { srcImgPath, dataUrls });
     }
   }
 
   const performHumanDetection = async (imagePath: string) => {
     // ここにHumanDetectionの人間判定のロジックを実装
-    let imagePathModified = '';
+    const imagePathsModified = [];
 
     for (let i = 1; i <= 4; i++) {
-      imagePathModified = imagePath.replace('.jpg', `_${i}.jpg`);
-      console.log(`人間判定を実行: ${imagePathModified}`);
+      imagePathsModified.push(imagePath.replace('.jpg', `_${i}.jpg`));
+      console.log(`人間判定を実行: ${imagePathsModified[i - 1]}`);
     }
-    detectImage(imagePathModified);
+    detectImage(imagePath.replace('__.jpg', `.jpg`), imagePathsModified);
   };
 
   // 画像ファイルのリストを取得して、それぞれを分割
@@ -144,6 +147,17 @@ ipcMain.on('get-aiimage', async (event) => {
   });
 
   // event.reply('get-aiimage-reply', 'Image fetch initiated');
+});
+
+ipcMain.on('human-detected', (event, data) => {
+  console.log('human-detected', data);
+
+  const segmind = new Segmind();
+  segmind.setEnvironmentConfig(environmentConfig);
+  segmind.getAIImageRequest({
+    input_face_image: path.join(getTmpFolderPath(), 'harry.jpg'),
+    output_face_image: data,
+  });
 });
 
 // // LeonardoAIの画像取得後の処理

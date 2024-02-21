@@ -57,9 +57,13 @@ export default class AIImageFetcher {
             options,
           );
           const data = await response.json();
-          if (data.generations_by_pk.status === 'PENDING') {
+          // data.generations_by_pkが存在し、nullでないことを確認
+          if (
+            data.generations_by_pk &&
+            data.generations_by_pk.status === 'PENDING'
+          ) {
             setTimeout(fetchImage, 2000); // 2秒後に再取得
-          } else {
+          } else if (data.generations_by_pk) {
             console.log(data.generations_by_pk.generated_images);
             await Promise.all(
               data.generations_by_pk.generated_images.map(
@@ -75,6 +79,12 @@ export default class AIImageFetcher {
 
             // this.onComplete(outputFolder);
             resolve(outputFolder);
+          } else {
+            // data.generations_by_pkがnullまたは存在しない場合のエラーハンドリング
+            console.error(
+              'Error: generations_by_pk is null or does not exist.',
+            );
+            reject(new Error('generations_by_pk is null or does not exist.'));
           }
         } catch (err) {
           console.error(err);
