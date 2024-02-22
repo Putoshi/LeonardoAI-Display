@@ -37,7 +37,10 @@ export default class Segmind {
   }
 
   // AI画像を取得するリクエストを送信
-  async getAIImageRequest(data: FaceswapType) {
+  async getAIImageRequest(
+    data: FaceswapType,
+    outputPath: string,
+  ): Promise<void> {
     const config = {
       input_face_image: this.convertToBase64(data.input_face_image),
       target_face_image: this.convertToBase64(data.output_face_image),
@@ -45,38 +48,26 @@ export default class Segmind {
       face_restore: true,
     };
 
-    // Base64文字列をファイルとして保存
-    // this.saveBase64AsFile(config.input_face_image, 'inputFaceImage.txt');
-    // this.saveBase64AsFile(config.target_face_image, 'targetFaceImage.txt');
-
     const apiKey = this.environmentConfig.SEGMINF_API_KEY;
     const url = this.environmentConfig.SEGMINF_API_URL;
     console.log('apiKey: ', apiKey);
-
     console.log('url: ', url);
 
-    (async () => {
-      try {
-        const headers = {
-          'X-API-KEY': apiKey,
-        };
-        console.log({
-          headers,
-        });
+    try {
+      const headers = {
+        'X-API-KEY': apiKey,
+      };
+      console.log({ headers });
 
-        const response = await axios.post(url, config, {
-          headers,
-          responseType: 'arraybuffer',
-        });
+      const response = await axios.post(url, config, {
+        headers,
+        responseType: 'arraybuffer',
+      });
 
-        ImageSaver.saveImageFromArrayBuffer(
-          response.data,
-          path.join(getTmpFolderPath(), 'outputFaceImage.jpg'),
-        );
-        console.log('FaceSwap完了');
-      } catch (error: any) {
-        console.error('Error:', error.response.data);
-      }
-    })();
+      await ImageSaver.saveImageFromArrayBuffer(response.data, outputPath);
+      console.log('FaceSwap完了');
+    } catch (error: any) {
+      console.error('Error:', error.response.data);
+    }
   }
 }

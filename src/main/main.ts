@@ -149,15 +149,80 @@ ipcMain.on('get-aiimage', async (event) => {
   // event.reply('get-aiimage-reply', 'Image fetch initiated');
 });
 
-ipcMain.on('human-detected', (event, data) => {
+const sliceHumanImg = async (
+  srcPath: string,
+  outputPath: string,
+  bbox: number[],
+) => {
+  await ImageSlicer.crop(
+    srcPath,
+    outputPath,
+    bbox[1],
+    bbox[0],
+    bbox[2],
+    bbox[3],
+  );
+};
+
+const compositeImg = async (
+  srcPath: string,
+  humanPath: string,
+  bbox: number[],
+  outputPath: string,
+) => {
+  // ベース画像に合成する画像を重ねる
+  await require('sharp')(humanPath)
+    .resize(bbox[2], bbox[3])
+    .toBuffer()
+    .then((resizedOverlayBuffer) => {
+      // リサイズしたオーバーレイ画像をベース画像に合成
+      return require('sharp')(srcPath)
+        .composite([
+          {
+            input: resizedOverlayBuffer,
+            left: bbox[0],
+            top: bbox[1],
+            blend: 'over',
+          },
+        ])
+        .toFile(outputPath);
+    })
+    .then(() => {
+      console.log('画像がリサイズされ、合成され、保存されました。');
+    })
+    .catch((err) => {
+      console.error('画像のリサイズまたは合成中にエラーが発生しました:', err);
+    });
+};
+
+ipcMain.on('human-detected', async (event, data) => {
   console.log('human-detected', data);
+  // console.log('data.srcImgPath', data.srcImgPath);
+  // console.log('data.humanBBox', data.humanBBox);
+
+  const humanImgPath = data.srcImgPath.replace('.jpg', '__human.jpg');
+
+  await sliceHumanImg(data.srcImgPath, humanImgPath, data.humanBBox);
+  console.log('human image sliced');
 
   const segmind = new Segmind();
   segmind.setEnvironmentConfig(environmentConfig);
-  segmind.getAIImageRequest({
-    input_face_image: path.join(getTmpFolderPath(), 'harry.jpg'),
-    output_face_image: data,
-  });
+  // ここでawaitを使用して、この処理が完了するまで待機します
+  await segmind.getAIImageRequest(
+    {
+      input_face_image: path.join(getTmpFolderPath(), 'boku.png'), // harry.jpg
+      output_face_image: humanImgPath,
+    },
+    data.srcImgPath.replace('.jpg', '__swap.jpg'),
+  );
+
+  await compositeImg(
+    data.srcImgPath,
+    data.srcImgPath.replace('.jpg', '__swap.jpg'),
+    data.humanBBox,
+    data.srcImgPath.replace('.jpg', '__output.jpg'),
+  );
+  console.log('composite image done');
 });
 
 // // LeonardoAIの画像取得後の処理

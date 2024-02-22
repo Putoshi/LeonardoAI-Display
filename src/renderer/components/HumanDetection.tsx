@@ -1,10 +1,11 @@
 import React, { useRef, useEffect, useState } from 'react';
+import LeonardoAIOptions from '../../main/LeonardoAIOptions';
 
 require('@tensorflow/tfjs-backend-cpu');
 require('@tensorflow/tfjs-backend-webgl');
 const cocoSsd = require('@tensorflow-models/coco-ssd');
 
-const margin = 50;
+const margin = 20;
 
 function HumanDetection() {
   const [imageSrcs, setImageSrcs] = useState([[], [], [], []]);
@@ -55,13 +56,43 @@ function HumanDetection() {
         console.log('人間が検出されました');
 
         console.log('humanBBoxes', humanBBoxes);
-        window.electron.ipcRenderer.sendMessage('human-detected', srcImgPath);
+        const scale = LeonardoAIOptions.width / window.innerWidth;
+        window.electron.ipcRenderer.sendMessage('human-detected', {
+          srcImgPath,
+          humanBBox: [
+            Math.floor(humanBBoxes[0][0] * scale),
+            Math.floor(humanBBoxes[0][1] * scale),
+            Math.floor(humanBBoxes[0][2] * scale),
+            Math.floor(humanBBoxes[0][3] * scale),
+          ],
+        });
       } else {
         console.log('人間が検出されませんでした');
         window.electron.ipcRenderer.sendMessage('get-aiimage');
       }
     }
   }, [personDetected, srcImgPath, checking, humanBBoxes]);
+
+  // 画像の枠を超えないようにバウンディングボックスの座標を調整するための関数
+  const adjustBBoxesToImageBounds = (bboxes: number[][]) => {
+    return bboxes.map((bbox) => {
+      let [x, y, width, height] = bbox;
+      if (x < 0) {
+        width += x;
+        x = 0;
+      } else if (x + width > window.innerWidth) {
+        width = window.innerWidth - x;
+      }
+      if (y < 0) {
+        height += y;
+        y = 0;
+      } else if (y + height > window.innerHeight) {
+        height = window.innerHeight - y;
+      }
+      // 調整後のバウンディングボックスの座標を返す
+      return [x, y, width, height];
+    });
+  };
 
   // 画像を変更する関数（例えば、ボタンクリックで呼び出す）
   const onImageLoaded = (index: number) => {
@@ -98,15 +129,20 @@ function HumanDetection() {
               const modifiedX = x * scale + offsetX;
               const modifiedY = y * scale + offsetY;
               return [
-                modifiedX - margin,
-                modifiedY - margin,
-                modifiedWidth + margin * 2,
-                modifiedHeight + margin * 2,
+                Math.floor(modifiedX - margin),
+                Math.floor(modifiedY - margin),
+                Math.floor(modifiedWidth + margin * 2),
+                Math.floor(modifiedHeight + margin * 2),
               ];
             });
 
+            console.log(modifiedBBoxes);
+
+            // modifiedBBoxesの計算後に呼び出し
+            const adjustedBBoxes = adjustBBoxesToImageBounds(modifiedBBoxes);
+
             // バウンディングボックスを面積で降順に並び替え
-            const sortedBBoxes = [...humanBBoxes, ...modifiedBBoxes].sort(
+            const sortedBBoxes = [...humanBBoxes, ...adjustedBBoxes].sort(
               (a, b) => {
                 const areaA = (a[2] - a[0]) * (a[3] - a[1]); // aの面積 = 幅 * 高さ
                 const areaB = (b[2] - b[0]) * (b[3] - b[1]); // bの面積 = 幅 * 高さ
