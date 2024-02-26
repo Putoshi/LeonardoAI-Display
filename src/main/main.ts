@@ -210,7 +210,7 @@ ipcMain.on('human-detected', async (event, data) => {
   // ここでawaitを使用して、この処理が完了するまで待機します
   await segmind.getAIImageRequest(
     {
-      input_face_image: path.join(getTmpFolderPath(), 'boku.png'), // harry.jpg
+      input_face_image: path.join(getTmpFolderPath(), 'harry.jpg'), // harry.jpg　boku.png
       output_face_image: humanImgPath,
     },
     data.srcImgPath.replace('.jpg', '__swap.jpg'),

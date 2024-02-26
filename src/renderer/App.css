@@ -12,6 +12,12 @@ body {
     #dd5789 51.77%,
     #7a2c9e 129.35%
   );
+  /* background: linear-gradient(
+    200.96deg,
+    #f9f0c4 -29.09%,
+    #f6cfde 51.77%,
+    #f6fa79 129.35%
+  ); */
   font-family: sans-serif;
   overflow-y: hidden;
   display: flex;

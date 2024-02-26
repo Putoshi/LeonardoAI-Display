@@ -202,13 +202,15 @@ function HumanDetection() {
           <div
             key={`box0`}
             style={{
-              backgroundColor: 'rgba(125, 95, 220, 0.35)',
+              // backgroundColor: 'rgba(125, 95, 220, 0.35)',
               position: 'absolute',
               top: `${humanBBoxes[0][1]}px`,
               left: `${humanBBoxes[0][0]}px`,
               width: `${humanBBoxes[0][2]}px`,
               height: `${humanBBoxes[0][3]}px`,
               zIndex: 4,
+              backdropFilter: `blur(9px)`,
+              border: `solid 2px #fff`,
             }}
           />
         )}

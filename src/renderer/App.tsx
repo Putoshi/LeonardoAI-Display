@@ -5,10 +5,12 @@ import './App.css';
 import WebcamComponent from './components/WebcamComponent';
 import AIImageComponent from './components/AIImageComponent';
 import HumanDetection from './components/HumanDetection';
+import ConsoleWindow from './components/ConsoleWindow';
 
 function TopView() {
   return (
     <div>
+      <ConsoleWindow />
       <HumanDetection />
       {/* <WebcamComponent /> */}
       {/* <AIImageComponent /> */}

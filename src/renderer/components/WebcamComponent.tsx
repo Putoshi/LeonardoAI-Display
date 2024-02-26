@@ -74,16 +74,16 @@ function WebcamComponent() {
         <div
           style={{
             position: 'relative',
-            width: '100vw',
-            height: '100vw',
+            // width: '100vw',
+            // height: '100vw',
           }}
         >
           <div
             style={{
               // width,
               // height,
-              width: '100vw',
-              height: '100vw',
+              width: '100%',
+              height: '100%',
               position: 'relative',
               transform: mirror ? 'scaleX(-1)' : 'none',
             }}
@@ -113,21 +113,21 @@ function WebcamComponent() {
                 // width,
                 width: '100%',
                 height: '100%',
-                position: 'absolute',
+                // position: 'absolute',
               }}
             />
           </div>
         </div>
-        <p>{`Loading: ${isLoading}`}</p>
-        <p>{`Face Detected: ${detected}`}</p>
-        <p>{`Number of faces detected: ${facesDetected}`}</p>
+        {/* <p>{`Loading: ${isLoading}`}</p> */}
+        <p>faceDetected: {faceDetected ? 'true' : 'false'}</p>
+        {/* <p>{`Face Detected: ${detected}`}</p> */}
+        {/* <p>{`Number of faces detected: ${facesDetected}`}</p> */}
         <button type="button" onClick={toggleMirror}>
           Toggle Mirror
         </button>
         <button type="button" onClick={saveScreenshot}>
           Save Image
         </button>
-        faceDetected: {faceDetected ? 'true' : 'false'}
       </div>
     </div>
   );
