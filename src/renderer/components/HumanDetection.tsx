@@ -5,12 +5,15 @@ require('@tensorflow/tfjs-backend-cpu');
 require('@tensorflow/tfjs-backend-webgl');
 const cocoSsd = require('@tensorflow-models/coco-ssd');
 
-const margin = 20;
+const margin = 5;
 
 function HumanDetection() {
   const [imageSrcs, setImageSrcs] = useState([[], [], [], []]);
   const imgRefs = useRef([]);
+
   const [personDetected, setPersonDetected] = useState(false);
+  const [compositDone, setCompositDone] = useState(false);
+  const [compositImageSrc, setCompositImageSrc] = useState('');
   const [checking, setChecking] = useState();
   const [srcImgPath, setSrcImgPath] = useState('');
   // boundingBoxを配列の配列に変更
@@ -19,7 +22,7 @@ function HumanDetection() {
   const [humanBBoxes, setHumanBBoxes] = useState([]);
 
   useEffect(() => {
-    const removeListener = window.electron.ipcRenderer.on(
+    const removeHumanCheckEveListener = window.electron.ipcRenderer.on(
       'human-check',
       (data) => {
         console.log('humancheckイベントを受信しました。');
@@ -41,11 +44,25 @@ function HumanDetection() {
 
         // humanBBoxesの初期化
         setHumanBBoxes([]);
+
+        setCompositImageSrc(''); // 画像をクリア
+
+        setCompositDone(false);
+      },
+    );
+
+    const removeGeneDoneEveListener = window.electron.ipcRenderer.on(
+      'generate-complete',
+      (data) => {
+        console.log('generate-completeイベントを受信しました。');
+        setCompositDone(true);
+        setCompositImageSrc(data.dataUrl as string);
       },
     );
 
     return () => {
-      removeListener();
+      removeHumanCheckEveListener();
+      removeGeneDoneEveListener();
     };
   }, []);
 
@@ -178,26 +195,38 @@ function HumanDetection() {
 
   return (
     <div>
-      {/* {personDetected && (
-        <p
-          style={{
-            position: 'absolute',
-            top: 0,
-            right: 0,
-            zIndex: 2,
-          }}
-        >
-          人間が検出されました
-        </p>
-      )} */}
       <div
         style={{
           position: 'relative',
           width: '100vw',
           height: '100vh',
-          opacity: personDetected ? 1 : 0.5,
+          filter: compositDone ? 'grayscale(0)' : 'grayscale(1)',
+          transition: 'filter 1.5s',
         }}
       >
+        {compositDone && (
+          <img
+            crossOrigin="anonymous"
+            alt=""
+            style={{
+              position: 'absolute',
+              marginLeft: 'auto',
+              marginRight: 'auto',
+              left: '0',
+              right: '0',
+              textAlign: 'center',
+              width: '100%',
+              height: '100%',
+              objectFit: 'fill',
+              zIndex: 100,
+              opacity: 0,
+              transition: 'opacity 1s',
+            }}
+            onLoad={(e) => (e.currentTarget.style.opacity = '1')} // 追加
+            src={compositImageSrc}
+          />
+        )}
+
         {humanBBoxes.length > 0 && (
           <div
             key={`box0`}
@@ -209,8 +238,7 @@ function HumanDetection() {
               width: `${humanBBoxes[0][2]}px`,
               height: `${humanBBoxes[0][3]}px`,
               zIndex: 4,
-              backdropFilter: `blur(9px)`,
-              border: `solid 2px #fff`,
+              border: `solid 2px red`,
             }}
           />
         )}
@@ -233,21 +261,6 @@ function HumanDetection() {
               transformOrigin: `${index % 2 === 0 ? '0' : '100%'} ${index < 2 ? '0' : '100%'}`,
             }}
           >
-            {/* boundingBoxes[index]を使用して各画像に対応するboundingBoxを描画 */}
-            {/* {boundingBoxes[index].map((box, boxIndex) => (
-              <div
-                key={`${boxIndex + 1}`}
-                style={{
-                  backgroundColor: 'rgba(255, 95, 170, 0.35)',
-                  position: 'absolute',
-                  top: `${box.bbox[1]}px`,
-                  left: `${box.bbox[0]}px`,
-                  width: `${box.bbox[2]}px`,
-                  height: `${box.bbox[3]}px`,
-                  zIndex: 1,
-                }}
-              />
-            ))} */}
             <img
               crossOrigin="anonymous"
               ref={(el) => (imgRefs.current[index] = el)}
@@ -270,17 +283,18 @@ function HumanDetection() {
           </div>
         ))}
       </div>
-      <button
+      {/* <button
         type="button"
         style={{
           position: 'absolute',
           top: 0,
           left: 0,
+          zIndex: 102,
         }}
         onClick={changeImage}
       >
         画像を変更
-      </button>
+      </button> */}
     </div>
   );
 }

@@ -44,6 +44,7 @@ class AppUpdater {
 
 let mainWindow: BrowserWindow | null = null;
 let subWindow: BrowserWindow | null = null;
+let faceImageURL: string | null = path.join(getTmpFolderPath(), 'harry.jpg');
 
 ipcMain.on('ipc-example', async (event, arg) => {
   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
@@ -51,34 +52,43 @@ ipcMain.on('ipc-example', async (event, arg) => {
   event.reply('ipc-example', msgTemplate('pong'));
 });
 
-ipcMain.on('save-screenshot', (event, data) => {
-  const defaultPath = path.join(getTmpFolderPath(), `image-${Date.now()}.jpg`);
-  console.log('Saving screenshot to', defaultPath);
-  fs.writeFileSync(
-    defaultPath,
-    data.replace(/^data:image\/jpeg;base64,/, ''),
-    'base64',
-  );
-  // const filePath = dialog.showSaveDialogSync({
-  //   buttonLabel: 'Save image',
-  //   defaultPath,
-  // });
+async function detectImage(srcImgPath: string, imagePaths: string[]) {
+  const dataUrls = imagePaths.map((imagePath) => {
+    const base64Image = fs.readFileSync(imagePath, { encoding: 'base64' });
+    return `data:image/jpeg;base64,${base64Image}`;
+  });
 
-  // if (filePath) {
-  //   console.log('Saving screenshot to', filePath);
-  //   fs.writeFileSync(
-  //     filePath,
-  //     data.replace(/^data:image\/jpeg;base64,/, ''),
-  //     'base64',
-  //   );
-  // }
-});
+  // console.log('mainWindow', mainWindow);
 
-// AI画像の取得リクエスト
-// IPCイベントリスナー内でAIFetcherを使用
-ipcMain.on('get-aiimage', async (event) => {
-  const outputFolder = await aiImageFetcher.getAIImageRequest();
-  console.log('outputFolder', outputFolder);
+  if (mainWindow) {
+    mainWindow.webContents.send('human-check', { srcImgPath, dataUrls });
+  }
+}
+
+const performHumanDetection = async (imagePath: string) => {
+  // ここにHumanDetectionの人間判定のロジックを実装
+  const imagePathsModified = [];
+
+  for (let i = 1; i <= 4; i++) {
+    imagePathsModified.push(imagePath.replace('.jpg', `_${i}.jpg`));
+    console.log(`人間判定を実行: ${imagePathsModified[i - 1]}`);
+  }
+  detectImage(imagePath.replace('__.jpg', `.jpg`), imagePathsModified);
+};
+
+// 画像生成開始
+const startGenerating = async () => {
+  let outputFolder = '';
+  try {
+    outputFolder = await aiImageFetcher.getAIImageRequest();
+    console.log('outputFolder', outputFolder);
+  } catch (error) {
+    console.error('AI画像取得リクエストでエラーが発生しました:', error);
+    mainWindow?.webContents.send('generate-complete', {
+      dataUrl: ``,
+    });
+    subWindow?.webContents.send('generate-complete');
+  }
 
   // 画像を分割して保存
   const sliceImgPartical = async (_srcPath: string, _outputPath: string) => {
@@ -110,30 +120,6 @@ ipcMain.on('get-aiimage', async (event) => {
     );
   };
 
-  async function detectImage(srcImgPath: string, imagePaths: string[]) {
-    const dataUrls = imagePaths.map((imagePath) => {
-      const base64Image = fs.readFileSync(imagePath, { encoding: 'base64' });
-      return `data:image/jpeg;base64,${base64Image}`;
-    });
-
-    // console.log('mainWindow', mainWindow);
-
-    if (mainWindow) {
-      mainWindow.webContents.send('human-check', { srcImgPath, dataUrls });
-    }
-  }
-
-  const performHumanDetection = async (imagePath: string) => {
-    // ここにHumanDetectionの人間判定のロジックを実装
-    const imagePathsModified = [];
-
-    for (let i = 1; i <= 4; i++) {
-      imagePathsModified.push(imagePath.replace('.jpg', `_${i}.jpg`));
-      console.log(`人間判定を実行: ${imagePathsModified[i - 1]}`);
-    }
-    detectImage(imagePath.replace('__.jpg', `.jpg`), imagePathsModified);
-  };
-
   // 画像ファイルのリストを取得して、それぞれを分割
   fs.readdir(outputFolder, (err, files) => {
     if (err) {
@@ -152,7 +138,12 @@ ipcMain.on('get-aiimage', async (event) => {
       }
     });
   });
+};
 
+// AI画像の取得リクエスト
+// IPCイベントリスナー内でAIFetcherを使用
+ipcMain.on('get-aiimage', async (event) => {
+  startGenerating();
   // event.reply('get-aiimage-reply', 'Image fetch initiated');
 });
 
@@ -217,7 +208,7 @@ ipcMain.on('human-detected', async (event, data) => {
   // ここでawaitを使用して、この処理が完了するまで待機します
   await segmind.getAIImageRequest(
     {
-      input_face_image: path.join(getTmpFolderPath(), 'harry.jpg'), // harry.jpg　boku.png
+      input_face_image: faceImageURL,
       output_face_image: humanImgPath,
     },
     data.srcImgPath.replace('.jpg', '__swap.jpg'),
@@ -230,6 +221,44 @@ ipcMain.on('human-detected', async (event, data) => {
     data.srcImgPath.replace('.jpg', '__output.jpg'),
   );
   console.log('composite image done');
+
+  const base64Image = fs.readFileSync(
+    data.srcImgPath.replace('.jpg', '__output.jpg'),
+    { encoding: 'base64' },
+  );
+
+  mainWindow?.webContents.send('generate-complete', {
+    dataUrl: `data:image/jpeg;base64,${base64Image}`,
+  });
+  subWindow?.webContents.send('generate-complete');
+});
+
+ipcMain.on('save-screenshot', (event, data) => {
+  const defaultPath = path.join(getTmpFolderPath(), `image-${Date.now()}.jpg`);
+  console.log('Saving screenshot to', defaultPath);
+  fs.writeFileSync(
+    defaultPath,
+    data.replace(/^data:image\/jpeg;base64,/, ''),
+    'base64',
+  );
+
+  faceImageURL = defaultPath;
+  console.log('faceImageURL', faceImageURL);
+
+  startGenerating();
+  // const filePath = dialog.showSaveDialogSync({
+  //   buttonLabel: 'Save image',
+  //   defaultPath,
+  // });
+
+  // if (filePath) {
+  //   console.log('Saving screenshot to', filePath);
+  //   fs.writeFileSync(
+  //     filePath,
+  //     data.replace(/^data:image\/jpeg;base64,/, ''),
+  //     'base64',
+  //   );
+  // }
 });
 
 // // LeonardoAIの画像取得後の処理

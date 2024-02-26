@@ -58,14 +58,32 @@ function WebcamComponent() {
           setScreenshotUrl(screenshot); // スクリーンショットのURLを状態に保存
           setFlash(true); // アニメーション開始
 
-          setTimeout(() => {
-            setScreenshotUrl(null); // 10秒後にURLをクリア
-            setFlash(false); // アニメーション終了
-          }, 10000);
+          // setTimeout(
+          //   () => {
+          //     setScreenshotUrl(null); // 10秒後にURLをクリア
+          //     setFlash(false); // アニメーション終了
+          //   },
+          //   3 * 60 * 1000,
+          // );
         }
       }
     }
   };
+
+  useEffect(() => {
+    const removeListener = window.electron.ipcRenderer.on(
+      'generate-complete',
+      (data) => {
+        console.log('generate-completeイベントを受信しました。');
+        setScreenshotUrl(null);
+        setFlash(false);
+      },
+    );
+
+    return () => {
+      removeListener();
+    };
+  }, []);
 
   // 顔が中央にあるか、顔が大きすぎるか、顔が小さすぎるかを判定
   useEffect(() => {
@@ -79,15 +97,15 @@ function WebcamComponent() {
     // console.log('Y', boundingBox[0]?.yCenter + boundingBox[0]?.height * 0.5);
     const facecenterX = boundingBox[0]?.xCenter + boundingBox[0]?.width * 0.5;
     const facecenterY = boundingBox[0]?.yCenter + boundingBox[0]?.height * 0.5;
-    const isCenteredX = 0.4 < facecenterX && facecenterX < 0.6;
-    const isCenteredY = 0.35 < facecenterY && facecenterY < 0.65;
+    const isCenteredX = 0.45 < facecenterX && facecenterX < 0.55;
+    const isCenteredY = 0.45 < facecenterY && facecenterY < 0.55;
     if (boundingBox.length > 0) {
       if (boundingBox.length === 1) {
         if (!isCenteredX || !isCenteredY) {
           setDetectAlert('Keep your face centered in the frame.');
         } else if (
-          boundingBox[0]?.width < 0.25 ||
-          boundingBox[0]?.height < 0.25
+          boundingBox[0]?.width < 0.3 ||
+          boundingBox[0]?.height < 0.3
         ) {
           setDetectAlert('A little closer to the camera.');
         } else {
