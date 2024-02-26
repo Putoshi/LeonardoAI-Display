@@ -16,7 +16,7 @@ function ConsoleWindow() {
         width: '100%',
         height: '100%',
         // padding: '5px',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backgroundColor: 'rgba(0, 0, 0, 1)',
       }}
     >
       <div
@@ -30,7 +30,7 @@ function ConsoleWindow() {
       >
         <WebcamComponent />
       </div>
-      <p
+      {/* <p
         style={{
           color: 'rgba(0, 0, 0, 0.5)',
           zIndex: 1,
@@ -44,7 +44,7 @@ function ConsoleWindow() {
         }}
       >
         Image Generating...
-      </p>
+      </p> */}
     </div>
   );
 }

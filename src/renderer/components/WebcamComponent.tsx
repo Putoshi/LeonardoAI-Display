@@ -1,9 +1,10 @@
-import { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import Webcam from 'react-webcam';
 import { CameraOptions, useFaceDetection } from 'react-use-face-detection';
 import FaceDetection from '@mediapipe/face_detection';
 import { Camera } from '@mediapipe/camera_utils';
 import { atom, useAtom } from 'jotai';
+import { motion } from 'framer-motion';
 import dummy from '../../../assets/people.png';
 
 const mirrorAtom = atom<boolean>(true);
@@ -20,6 +21,7 @@ function WebcamComponent() {
   const detectionTimeoutRef = useRef<NodeJS.Timeout | null>(null); // eslint-disable-line
 
   const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
+  const [flash, setFlash] = useState<boolean>(false);
 
   const toggleMirror = () => {
     setMirror(!mirror);
@@ -49,14 +51,17 @@ function WebcamComponent() {
         const screenshot = webcamCurrent.getScreenshot();
         if (screenshot) {
           console.log('screenshot');
-          // window.electron.ipcRenderer.sendMessage(
-          //   'save-screenshot',
-          //   screenshot,
-          // );
+          window.electron.ipcRenderer.sendMessage(
+            'save-screenshot',
+            screenshot,
+          );
           setScreenshotUrl(screenshot); // スクリーンショットのURLを状態に保存
+          setFlash(true); // アニメーション開始
+
           setTimeout(() => {
-            setScreenshotUrl(null); // 30秒後にURLをクリア
-          }, 3000);
+            setScreenshotUrl(null); // 10秒後にURLをクリア
+            setFlash(false); // アニメーション終了
+          }, 10000);
         }
       }
     }
@@ -64,6 +69,12 @@ function WebcamComponent() {
 
   // 顔が中央にあるか、顔が大きすぎるか、顔が小さすぎるかを判定
   useEffect(() => {
+    if (flash) {
+      setDetectAlert(
+        'Creating art with generative AI.\n Please wait a moment...',
+      );
+      return;
+    }
     // console.log('X', boundingBox[0]?.xCenter + boundingBox[0]?.width * 0.5);
     // console.log('Y', boundingBox[0]?.yCenter + boundingBox[0]?.height * 0.5);
     const facecenterX = boundingBox[0]?.xCenter + boundingBox[0]?.width * 0.5;
@@ -86,13 +97,14 @@ function WebcamComponent() {
         setDetectAlert('Please be alone on camera.');
       }
     }
-  }, [boundingBox]);
+  }, [boundingBox, flash]);
 
   // 顔が検出されたら、1秒後にfaceDetectedをtrueにする
   useEffect(() => {
     if (detectionTimeoutRef.current) {
       clearTimeout(detectionTimeoutRef.current);
     }
+    // 顔が検出されたら、1秒後にfaceDetectedをtrueにする
     detectionTimeoutRef.current = setTimeout(() => {
       setFaceDetected(detected);
     }, 1000);
@@ -115,19 +127,46 @@ function WebcamComponent() {
     }
   }, [faceDetected, detectAlert]);
 
+  // detectAlertの値を改行で分割し、配列として扱う
+  const alertMessages = detectAlert.split('\n').map((line, index) => (
+    // 最後の要素以外には<br>を追加する
+    <React.Fragment key={index}>
+      {line}
+      {index < detectAlert.split('\n').length - 1 && <br />}
+    </React.Fragment>
+  ));
+
   return (
     <div>
       <div>
         <div
           style={{
             position: 'relative',
-            // width: '100vw',
-            // height: '100vw',
             overflow: 'hidden',
           }}
         >
+          {flash && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 1, 1, 0] }} // キーフレームを設定
+              exit={{ opacity: 0 }}
+              transition={{
+                times: [0, 0.05, 0.4, 1], // 各キーフレームのタイミングを設定
+                duration: 1, // アニメーションの全体の長さを設定
+              }}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                backgroundColor: 'white',
+                zIndex: 20,
+              }}
+            />
+          )}
           {screenshotUrl && (
-            <img
+            <motion.img
               style={{
                 width: '100%',
                 height: '100%',
@@ -172,10 +211,6 @@ function WebcamComponent() {
                 style={{
                   border: '4px solid red',
                   position: 'absolute',
-                  // top: `0%`,
-                  // left: `0%`,
-                  // width: `50%`,
-                  // height: `100px`,
                   top: `${box.yCenter * 100}%`,
                   left: `${box.xCenter * 100}%`,
                   width: `${box.width * 100}%`,
@@ -201,16 +236,58 @@ function WebcamComponent() {
           </div>
         </div>
         {/* <p>{`Loading: ${isLoading}`}</p> */}
-        <p>{detectAlert}</p>
-        <p>faceDetected: {faceDetected ? 'true' : 'false'}</p>
-        {/* <p>{`Face Detected: ${detected}`}</p> */}
-        {/* <p>{`Number of faces detected: ${facesDetected}`}</p> */}
-        {/* <button type="button" onClick={toggleMirror}>
-          Toggle Mirror
-        </button>
-        <button type="button" onClick={saveScreenshot}>
-          Save Image
-        </button> */}
+        <div
+          style={{
+            position: 'absolute',
+            top: '0%',
+            width: '100%',
+            textAlign: 'center',
+            fontFamily: 'Helvetica Neue, Arial, sans-serif',
+            fontSize: '24px',
+            letterSpacing: '2px',
+            zIndex: 500,
+            padding: '20px 0',
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            color:
+              detectAlert === 'Please stay still.' ? '#fff600' : '`#00ff13',
+          }}
+        >
+          {alertMessages}
+        </div>
+        <div
+          style={{
+            textAlign: 'left',
+            width: '100%',
+            fontFamily: 'Helvetica Neue, Arial, sans-serif',
+            fontSize: '14px',
+            letterSpacing: '2px',
+            zIndex: 500,
+            padding: '20px',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          }}
+        >
+          <p>{`wait: ${flash}`}</p>
+          <p>faceDetected: {faceDetected ? 'true' : 'false'}</p>
+          {!flash && (
+            <>
+              <p>{`Number of faces detected: ${facesDetected}`}</p>
+              {boundingBox.map((box, index) => (
+                <p key={index}>
+                  {`Face ${index + 1}: (${box.xCenter.toFixed(3)}, ${box.yCenter.toFixed(3)}, width: ${box.width.toFixed(3)}, height: ${box.height.toFixed(3)})`}
+                </p>
+              ))}
+            </>
+          )}
+          {/* <button type="button" onClick={toggleMirror}>
+            Toggle Mirror
+          ))}
+          {/* <button type="button" onClick={toggleMirror}>
+            Toggle Mirror
+          </button>
+          <button type="button" onClick={saveScreenshot}>
+            Save Image
+          </button> */}
+        </div>
       </div>
     </div>
   );
