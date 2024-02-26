@@ -10,7 +10,7 @@ import ConsoleWindow from './components/ConsoleWindow';
 function TopView() {
   return (
     <div>
-      <ConsoleWindow />
+      {/* <ConsoleWindow /> */}
       <HumanDetection />
       {/* <WebcamComponent /> */}
       {/* <AIImageComponent /> */}

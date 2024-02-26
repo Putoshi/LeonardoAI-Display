@@ -43,6 +43,7 @@ class AppUpdater {
 }
 
 let mainWindow: BrowserWindow | null = null;
+let subWindow: BrowserWindow | null = null;
 
 ipcMain.on('ipc-example', async (event, arg) => {
   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
@@ -52,19 +53,25 @@ ipcMain.on('ipc-example', async (event, arg) => {
 
 ipcMain.on('save-screenshot', (event, data) => {
   const defaultPath = path.join(getTmpFolderPath(), `image-${Date.now()}.jpg`);
-  const filePath = dialog.showSaveDialogSync({
-    buttonLabel: 'Save image',
+  console.log('Saving screenshot to', defaultPath);
+  fs.writeFileSync(
     defaultPath,
-  });
+    data.replace(/^data:image\/jpeg;base64,/, ''),
+    'base64',
+  );
+  // const filePath = dialog.showSaveDialogSync({
+  //   buttonLabel: 'Save image',
+  //   defaultPath,
+  // });
 
-  if (filePath) {
-    // console.log('Saving screenshot to', filePath);
-    fs.writeFileSync(
-      filePath,
-      data.replace(/^data:image\/jpeg;base64,/, ''),
-      'base64',
-    );
-  }
+  // if (filePath) {
+  //   console.log('Saving screenshot to', filePath);
+  //   fs.writeFileSync(
+  //     filePath,
+  //     data.replace(/^data:image\/jpeg;base64,/, ''),
+  //     'base64',
+  //   );
+  // }
 });
 
 // AI画像の取得リクエスト
@@ -285,6 +292,22 @@ const createWindow = async () => {
   });
 
   mainWindow.loadURL(util.resolveHtmlPath('index.html'));
+
+  subWindow = new BrowserWindow({
+    // show: false,
+    width: 1080 / 2,
+    height: 1920 / 2,
+    icon: getAssetPath('icon.png'),
+    webPreferences: {
+      // nodeIntegration: true,
+      // contextIsolation: false, // nodeIntegration を有効にする場合は、contextIsolation を無効にする必要があります
+      preload: app.isPackaged
+        ? path.join(__dirname, 'preload.js')
+        : path.join(__dirname, '../../.erb/dll/preload.js'),
+    },
+  });
+
+  subWindow.loadURL(util.resolveHtmlPath('control.html'));
 
   mainWindow.on('ready-to-show', () => {
     if (!mainWindow) {
