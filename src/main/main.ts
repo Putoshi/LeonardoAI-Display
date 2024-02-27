@@ -45,6 +45,7 @@ class AppUpdater {
 let mainWindow: BrowserWindow | null = null;
 let subWindow: BrowserWindow | null = null;
 let faceImageURL: string | null = path.join(getTmpFolderPath(), 'harry.jpg');
+let generating = false;
 
 ipcMain.on('ipc-example', async (event, arg) => {
   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
@@ -52,6 +53,7 @@ ipcMain.on('ipc-example', async (event, arg) => {
   event.reply('ipc-example', msgTemplate('pong'));
 });
 
+// 画像の人間判定を行う実行関数
 async function detectImage(srcImgPath: string, imagePaths: string[]) {
   const dataUrls = imagePaths.map((imagePath) => {
     const base64Image = fs.readFileSync(imagePath, { encoding: 'base64' });
@@ -65,29 +67,42 @@ async function detectImage(srcImgPath: string, imagePaths: string[]) {
   }
 }
 
+// 画像の人間判定
 const performHumanDetection = async (imagePath: string) => {
   // ここにHumanDetectionの人間判定のロジックを実装
   const imagePathsModified = [];
 
-  for (let i = 1; i <= 4; i++) {
-    imagePathsModified.push(imagePath.replace('.jpg', `_${i}.jpg`));
-    console.log(`人間判定を実行: ${imagePathsModified[i - 1]}`);
+  for (let i = 0; i < 4; i++) {
+    imagePathsModified.push(imagePath.replace('.jpg', `_${i + 1}.jpg`));
+    console.log(`人間判定を実行: ${imagePathsModified[i]}`);
   }
   detectImage(imagePath.replace('__.jpg', `.jpg`), imagePathsModified);
 };
 
+const ErrorHandler = (error: Error) => {
+  mainWindow?.webContents.send('generate-complete', {
+    dataUrl: ``,
+  });
+  subWindow?.webContents.send('generate-complete');
+  generating = false;
+};
+
 // 画像生成開始
 const startGenerating = async () => {
+  if (generating) {
+    console.log('既に生成中です。');
+    return;
+  }
+  generating = true;
+  mainWindow?.webContents.send('generate-start');
+
   let outputFolder = '';
   try {
     outputFolder = await aiImageFetcher.getAIImageRequest();
     console.log('outputFolder', outputFolder);
   } catch (error) {
     console.error('AI画像取得リクエストでエラーが発生しました:', error);
-    mainWindow?.webContents.send('generate-complete', {
-      dataUrl: ``,
-    });
-    subWindow?.webContents.send('generate-complete');
+    ErrorHandler(error);
   }
 
   // 画像を分割して保存
@@ -147,6 +162,14 @@ ipcMain.on('get-aiimage', async (event) => {
   // event.reply('get-aiimage-reply', 'Image fetch initiated');
 });
 
+// AI画像の取得リクエスト
+// IPCイベントリスナー内でAIFetcherを使用
+ipcMain.on('get-aiimage-retry', async (event) => {
+  generating = false;
+  startGenerating();
+  // event.reply('get-aiimage-reply', 'Image fetch initiated');
+});
+
 const sliceHumanImg = async (
   srcPath: string,
   outputPath: string,
@@ -190,6 +213,7 @@ const compositeImg = async (
     })
     .catch((err) => {
       console.error('画像のリサイズまたは合成中にエラーが発生しました:', err);
+      ErrorHandler(error as Error);
     });
 };
 
@@ -205,14 +229,19 @@ ipcMain.on('human-detected', async (event, data) => {
 
   const segmind = new Segmind();
   segmind.setEnvironmentConfig(environmentConfig);
-  // ここでawaitを使用して、この処理が完了するまで待機します
-  await segmind.getAIImageRequest(
-    {
-      input_face_image: faceImageURL,
-      output_face_image: humanImgPath,
-    },
-    data.srcImgPath.replace('.jpg', '__swap.jpg'),
-  );
+
+  try {
+    // ここでawaitを使用して、この処理が完了するまで待機します
+    await segmind.getAIImageRequest(
+      {
+        input_face_image: faceImageURL,
+        output_face_image: humanImgPath,
+      },
+      data.srcImgPath.replace('.jpg', '__swap.jpg'),
+    );
+  } catch (error) {
+    ErrorHandler(error as Error);
+  }
 
   await compositeImg(
     data.srcImgPath,
@@ -231,6 +260,7 @@ ipcMain.on('human-detected', async (event, data) => {
     dataUrl: `data:image/jpeg;base64,${base64Image}`,
   });
   subWindow?.webContents.send('generate-complete');
+  generating = false;
 });
 
 ipcMain.on('save-screenshot', (event, data) => {

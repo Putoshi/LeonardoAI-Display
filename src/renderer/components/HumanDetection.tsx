@@ -60,9 +60,18 @@ function HumanDetection() {
       },
     );
 
+    const removeGeneStartEveListener = window.electron.ipcRenderer.on(
+      'generate-start',
+      (data) => {
+        console.log('generate-startイベントを受信しました。');
+        // setCompositDone(false);
+      },
+    );
+
     return () => {
       removeHumanCheckEveListener();
       removeGeneDoneEveListener();
+      removeGeneStartEveListener();
     };
   }, []);
 
@@ -85,7 +94,7 @@ function HumanDetection() {
         });
       } else {
         console.log('人間が検出されませんでした');
-        window.electron.ipcRenderer.sendMessage('get-aiimage');
+        window.electron.ipcRenderer.sendMessage('get-aiimage-retry');
       }
     }
   }, [personDetected, srcImgPath, checking, humanBBoxes]);

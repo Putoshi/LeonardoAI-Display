@@ -14,6 +14,15 @@ const detectAlertAtom = atom<string>('');
 const width = 500;
 const height = 500;
 
+const alertMessagesAtom = atom({
+  centered: 'Keep your face centered in the frame.',
+  closer: 'A little closer to the camera.',
+  still: 'Please stay still.',
+  alone: 'Please be alone on camera.',
+  creating: 'Creating Image with generative AI.\n Please wait a moment...',
+  error: 'Error...!',
+});
+
 function WebcamComponent() {
   const [mirror, setMirror] = useAtom(mirrorAtom);
   const [faceDetected, setFaceDetected] = useAtom(faceDetectedAtom);
@@ -22,6 +31,7 @@ function WebcamComponent() {
 
   const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
   const [flash, setFlash] = useState<boolean>(false);
+  const [alertMessages, setAlertMessages] = useAtom(alertMessagesAtom);
 
   const toggleMirror = () => {
     setMirror(!mirror);
@@ -57,14 +67,6 @@ function WebcamComponent() {
           );
           setScreenshotUrl(screenshot); // スクリーンショットのURLを状態に保存
           setFlash(true); // アニメーション開始
-
-          // setTimeout(
-          //   () => {
-          //     setScreenshotUrl(null); // 10秒後にURLをクリア
-          //     setFlash(false); // アニメーション終了
-          //   },
-          //   3 * 60 * 1000,
-          // );
         }
       }
     }
@@ -75,6 +77,7 @@ function WebcamComponent() {
       'generate-complete',
       (data) => {
         console.log('generate-completeイベントを受信しました。');
+        setDetectAlert(alertMessages.complete);
         setScreenshotUrl(null);
         setFlash(false);
       },
@@ -88,9 +91,7 @@ function WebcamComponent() {
   // 顔が中央にあるか、顔が大きすぎるか、顔が小さすぎるかを判定
   useEffect(() => {
     if (flash) {
-      setDetectAlert(
-        'Creating art with generative AI.\n Please wait a moment...',
-      );
+      setDetectAlert(alertMessages.creating);
       return;
     }
     // console.log('X', boundingBox[0]?.xCenter + boundingBox[0]?.width * 0.5);
@@ -102,17 +103,17 @@ function WebcamComponent() {
     if (boundingBox.length > 0) {
       if (boundingBox.length === 1) {
         if (!isCenteredX || !isCenteredY) {
-          setDetectAlert('Keep your face centered in the frame.');
+          setDetectAlert(alertMessages.centered); // 顔が中央にない場合
         } else if (
           boundingBox[0]?.width < 0.3 ||
           boundingBox[0]?.height < 0.3
         ) {
-          setDetectAlert('A little closer to the camera.');
+          setDetectAlert(alertMessages.closer); // 顔が小さすぎる場合
         } else {
-          setDetectAlert('Please stay still.');
+          setDetectAlert(alertMessages.still); // 顔が中央にあり、大きさも問題ない場合
         }
       } else {
-        setDetectAlert('Please be alone on camera.');
+        setDetectAlert(alertMessages.alone); // 顔が複数検出された場合
       }
     }
   }, [boundingBox, flash]);
@@ -146,13 +147,14 @@ function WebcamComponent() {
   }, [faceDetected, detectAlert]);
 
   // detectAlertの値を改行で分割し、配列として扱う
-  const alertMessages = detectAlert.split('\n').map((line, index) => (
-    // 最後の要素以外には<br>を追加する
-    <React.Fragment key={index}>
-      {line}
-      {index < detectAlert.split('\n').length - 1 && <br />}
-    </React.Fragment>
-  ));
+  const parseAlertMessages = detectAlert
+    ? detectAlert.split('\n').map((line, index) => (
+        <React.Fragment key={index}>
+          {line}
+          {index < detectAlert.split('\n').length - 1 && <br />}
+        </React.Fragment>
+      ))
+    : null;
 
   return (
     <div>
@@ -266,11 +268,22 @@ function WebcamComponent() {
             zIndex: 500,
             padding: '20px 0',
             backgroundColor: 'rgba(0, 0, 0, 0.75)',
-            color:
-              detectAlert === 'Please stay still.' ? '#fff600' : '`#00ff13',
           }}
         >
-          {alertMessages}
+          <motion.div
+            style={{
+              color:
+                detectAlert === 'Please stay still.' ? '#00ff13' : '#fff600',
+            }}
+            animate={
+              detectAlert === alertMessages.creating
+                ? { opacity: [0.4, 1, 0.4] }
+                : { opacity: 1 }
+            }
+            transition={{ repeat: Infinity, duration: 2 }}
+          >
+            {parseAlertMessages}
+          </motion.div>
         </div>
         <div
           style={{
