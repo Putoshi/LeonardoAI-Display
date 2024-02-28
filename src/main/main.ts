@@ -62,6 +62,13 @@ ipcMain.on('ipc-example', async (event, arg) => {
   event.reply('ipc-example', msgTemplate('pong'));
 });
 
+ipcMain?.on('reload-app', () => {
+  const allWindows = BrowserWindow.getAllWindows();
+  allWindows.forEach((window) => {
+    window.reload();
+  });
+});
+
 /**
  * 分割された画像の人間判定を行う実行関数
  */

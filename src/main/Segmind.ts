@@ -37,37 +37,38 @@ export default class Segmind {
   }
 
   // AI画像を取得するリクエストを送信
-  async getAIImageRequest(
-    data: FaceswapType,
-    outputPath: string,
-  ): Promise<void> {
-    const config = {
-      input_face_image: this.convertToBase64(data.input_face_image),
-      target_face_image: this.convertToBase64(data.output_face_image),
-      file_type: 'jpg',
-      face_restore: true,
-    };
-
-    const apiKey = this.environmentConfig.SEGMINF_API_KEY;
-    const url = this.environmentConfig.SEGMINF_API_URL;
-    console.log('apiKey: ', apiKey);
-    console.log('url: ', url);
-
-    try {
-      const headers = {
-        'X-API-KEY': apiKey,
+  getAIImageRequest(data: FaceswapType, outputPath: string): Promise<void> {
+    return new Promise(async (resolve, reject) => {
+      const config = {
+        input_face_image: this.convertToBase64(data.input_face_image),
+        target_face_image: this.convertToBase64(data.output_face_image),
+        file_type: 'jpg',
+        face_restore: true,
       };
-      console.log({ headers });
 
-      const response = await axios.post(url, config, {
-        headers,
-        responseType: 'arraybuffer',
-      });
+      const apiKey = this.environmentConfig.SEGMINF_API_KEY;
+      const url = this.environmentConfig.SEGMINF_API_URL;
+      console.log('apiKey: ', apiKey);
+      console.log('url: ', url);
 
-      await ImageSaver.saveImageFromArrayBuffer(response.data, outputPath);
-      console.log('FaceSwap完了');
-    } catch (error: any) {
-      console.error('Error:', error.response.data);
-    }
+      try {
+        const headers = {
+          'X-API-KEY': apiKey,
+        };
+        console.log({ headers });
+
+        const response = await axios.post(url, config, {
+          headers,
+          responseType: 'arraybuffer',
+        });
+
+        await ImageSaver.saveImageFromArrayBuffer(response.data, outputPath);
+        console.log('FaceSwap完了');
+        resolve();
+      } catch (error: any) {
+        console.error('Error:', error.response.data);
+        reject(error);
+      }
+    });
   }
 }

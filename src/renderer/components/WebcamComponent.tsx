@@ -7,16 +7,20 @@ import { atom, useAtom } from 'jotai';
 import { motion } from 'framer-motion';
 import dummy from '../../../assets/people.png';
 
+const width = 500;
+const height = 500;
+
 const mirrorAtom = atom<boolean>(true);
 const faceDetectedAtom = atom<boolean>(false);
 const detectAlertAtom = atom<string>('');
 const logAtom = atom<string>('');
+const cameraDeviceIdxAtom = atom<number>(0);
 
-const width = 500;
-const height = 500;
-
+/**
+ * ヘッダーに出すアラート文言
+ */
 const alertMessagesAtom = atom({
-  centered: 'Keep your face centered in the frame.',
+  centered: 'Keep your face centered \n in the frame.',
   closer: 'A little closer to the camera.',
   still: 'Please stay still.',
   alone: 'Please be alone on camera.',
@@ -24,33 +28,50 @@ const alertMessagesAtom = atom({
   error: 'Error...!',
 });
 
+/**
+ * WebcamComponentコンポーネント
+ * @returns
+ */
 function WebcamComponent() {
   const [mirror, setMirror] = useAtom(mirrorAtom);
   const [faceDetected, setFaceDetected] = useAtom(faceDetectedAtom);
   const [detectAlert, setDetectAlert] = useAtom(detectAlertAtom);
   const detectionTimeoutRef = useRef<NodeJS.Timeout | null>(null); // eslint-disable-line
-
-  const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
-  const [flash, setFlash] = useState<boolean>(false);
   const [alertMessages, setAlertMessages] = useAtom(alertMessagesAtom);
   const [log, setLog] = useAtom(logAtom);
 
+  const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
+  const [flash, setFlash] = useState<boolean>(false);
+  const [deviceId, setDeviceId] = useState<string | null>(null);
+
+  /**
+   * Webcamのミラー表示を切り替える関数
+   */
   const toggleMirror = () => {
     setMirror(!mirror);
   };
 
-  async function getCameraDeviceId() {
+  /**
+   * カメラデバイスのIDを取得する関数
+   */
+  const getCameraDeviceIds = async () => {
+    console.log('getCameraDeviceIds');
+
     const devices = await navigator.mediaDevices.enumerateDevices();
     const videoDevices = devices.filter(
       (device) => device.kind === 'videoinput',
     );
     console.log('videoDevices', videoDevices);
-    if (videoDevices.length > 0) {
-      // 例として、最初のデバイスのIDを返します
-      return videoDevices[0].deviceId;
-    }
-    return null;
-  }
+    // videoDevices.forEach((device, index) => {
+    //   console.log('device', device);
+    // });
+
+    const storedIdx: number =
+      parseInt(localStorage.getItem('cameraDeviceIdx') as string, 10) || 0;
+
+    // cameraDeviceIdxで指定されたデバイスのIDを返す
+    return videoDevices.length > 0 ? videoDevices[storedIdx].deviceId : null;
+  };
 
   const { webcamRef, boundingBox, isLoading, detected, facesDetected } =
     useFaceDetection({
@@ -87,10 +108,21 @@ function WebcamComponent() {
     }
   };
 
+  const reloadApp = () => {
+    window.electron.ipcRenderer.sendMessage('reload-app');
+  };
+
   useEffect(() => {
-    getCameraDeviceId().then((deviceId) => {
-      console.log('deviceId', deviceId);
-    });
+    getCameraDeviceIds()
+      .then((id) => {
+        setDeviceId(id);
+        console.log(id);
+        return null; // 追加
+      })
+      .catch((error) => {
+        console.error('Error getting camera device ID:', error);
+      });
+
     const removeListener = window.electron.ipcRenderer.on(
       'generate-complete',
       (data) => {
@@ -118,6 +150,23 @@ function WebcamComponent() {
       removeLogListener();
     };
   }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key >= '0' && event.key <= '9') {
+        const newIdx = parseInt(event.key, 10);
+        localStorage.setItem('cameraDeviceIdx', newIdx.toString());
+        console.log('cameraDeviceIdx:', newIdx);
+        reloadApp();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [getCameraDeviceIds]); // 依存配列にgetCameraDeviceIdsを追加
 
   // 顔が中央にあるか、顔が大きすぎるか、顔が小さすぎるかを判定
   useEffect(() => {
@@ -253,7 +302,7 @@ function WebcamComponent() {
               top: '0px',
               left: '0px',
               zIndex: 10,
-              opacity: 0.4,
+              opacity: 0.6,
             }}
           />
           <div
@@ -272,8 +321,8 @@ function WebcamComponent() {
                 style={{
                   border:
                     detectAlert === 'Please stay still.'
-                      ? '4px solid green'
-                      : '4px solid red',
+                      ? '7px solid rgba(0, 255, 0, 1)'
+                      : '7px solid red',
                   position: 'absolute',
                   top: `${box.yCenter * 100}%`,
                   left: `${box.xCenter * 100}%`,
@@ -292,12 +341,18 @@ function WebcamComponent() {
                 width: '100%',
                 height: '100%',
               }}
-              videoConstraints={{
-                deviceId: {
-                  exact:
-                    'a6f33f89a138520c9652d374425d24966c3deee6038a77fe77ed19896d732dbd',
-                },
-              }}
+              {...(deviceId && {
+                videoConstraints: { deviceId: { exact: deviceId } },
+              })}
+              // videoConstraints={
+              //   deviceId ? { deviceId: { exact: deviceId } } : undefined
+              // }
+              // videoConstraints={{
+              //   deviceId: {
+              //     exact:
+              //       'a6f33f89a138520c9652d374425d24966c3deee6038a77fe77ed19896d732dbd',
+              //   },
+              // }}
             />
           </div>
         </div>
@@ -308,8 +363,9 @@ function WebcamComponent() {
             top: '0%',
             width: '100%',
             textAlign: 'center',
+            fontWeight: 'bold',
             fontFamily: 'Helvetica Neue, Arial, sans-serif',
-            fontSize: '24px',
+            fontSize: '26px',
             letterSpacing: '2px',
             zIndex: 500,
             padding: '20px 0',
@@ -333,6 +389,7 @@ function WebcamComponent() {
         </div>
         <div
           style={{
+            boxSizing: 'border-box',
             textAlign: 'left',
             width: '100%',
             fontFamily: 'Helvetica Neue, Arial, sans-serif',
