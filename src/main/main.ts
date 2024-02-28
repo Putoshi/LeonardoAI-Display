@@ -306,7 +306,7 @@ ipcMain.on('human-detected', async (event, data) => {
 
   try {
     // Segmindの顔SWAPのリクエストを行う
-    await segmind.getAIImageRequest(
+    await segmind.getSwapImageRequest(
       {
         input_face_image:
           faceImageURL ?? path.join(getTmpFolderPath(), 'harry.jpg'),
@@ -315,7 +315,14 @@ ipcMain.on('human-detected', async (event, data) => {
       data.srcImgPath.replace('.jpg', '__swap.jpg'),
     );
   } catch (error) {
+    // console.log('FaceSwap Error:', error);
+    console.error('SWAP画像取得リクエストでエラーが発生しました:', error.code);
+    subWindow?.webContents.send('log', {
+      txt: 'AI画像取得リクエストでエラーが発生しました',
+    });
+
     ErrorHandler();
+    return;
   }
 
   subWindow?.webContents.send('log', {

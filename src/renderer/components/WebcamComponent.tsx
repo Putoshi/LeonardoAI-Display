@@ -415,6 +415,7 @@ function WebcamComponent() {
           <p
             style={{
               marginTop: '20px',
+              lineHeight: '1',
               whiteSpace: 'pre-wrap',
             }}
           >

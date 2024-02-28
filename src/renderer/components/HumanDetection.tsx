@@ -251,7 +251,7 @@ function HumanDetection() {
               width: `${humanBBoxes[0][2]}px`,
               height: `${humanBBoxes[0][3]}px`,
               zIndex: 4,
-              border: `solid 2px red`,
+              border: `solid 4px red`,
             }}
           />
         )}

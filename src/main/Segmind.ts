@@ -37,7 +37,7 @@ export default class Segmind {
   }
 
   // AI画像を取得するリクエストを送信
-  getAIImageRequest(data: FaceswapType, outputPath: string): Promise<void> {
+  getSwapImageRequest(data: FaceswapType, outputPath: string): Promise<void> {
     return new Promise(async (resolve, reject) => {
       const config = {
         input_face_image: this.convertToBase64(data.input_face_image),
