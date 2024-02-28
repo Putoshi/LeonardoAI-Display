@@ -10,6 +10,7 @@ import dummy from '../../../assets/people.png';
 const mirrorAtom = atom<boolean>(true);
 const faceDetectedAtom = atom<boolean>(false);
 const detectAlertAtom = atom<string>('');
+const logAtom = atom<string>('');
 
 const width = 500;
 const height = 500;
@@ -32,10 +33,24 @@ function WebcamComponent() {
   const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
   const [flash, setFlash] = useState<boolean>(false);
   const [alertMessages, setAlertMessages] = useAtom(alertMessagesAtom);
+  const [log, setLog] = useAtom(logAtom);
 
   const toggleMirror = () => {
     setMirror(!mirror);
   };
+
+  async function getCameraDeviceId() {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const videoDevices = devices.filter(
+      (device) => device.kind === 'videoinput',
+    );
+    console.log('videoDevices', videoDevices);
+    if (videoDevices.length > 0) {
+      // 例として、最初のデバイスのIDを返します
+      return videoDevices[0].deviceId;
+    }
+    return null;
+  }
 
   const { webcamRef, boundingBox, isLoading, detected, facesDetected } =
     useFaceDetection({
@@ -73,6 +88,9 @@ function WebcamComponent() {
   };
 
   useEffect(() => {
+    getCameraDeviceId().then((deviceId) => {
+      console.log('deviceId', deviceId);
+    });
     const removeListener = window.electron.ipcRenderer.on(
       'generate-complete',
       (data) => {
@@ -83,8 +101,21 @@ function WebcamComponent() {
       },
     );
 
+    const removeLogListener = window.electron.ipcRenderer.on('log', (data) => {
+      setLog((prevLog) => {
+        const timestamp = new Date().toLocaleString('ja-JP');
+        const newLog = `${prevLog}\n${timestamp}  ${data.txt}`;
+        const splitLog = newLog.split('\n');
+        if (splitLog.length > 10) {
+          return splitLog.slice(-10).join('\n');
+        }
+        return newLog;
+      });
+    });
+
     return () => {
       removeListener();
+      removeLogListener();
     };
   }, []);
 
@@ -98,8 +129,8 @@ function WebcamComponent() {
     // console.log('Y', boundingBox[0]?.yCenter + boundingBox[0]?.height * 0.5);
     const facecenterX = boundingBox[0]?.xCenter + boundingBox[0]?.width * 0.5;
     const facecenterY = boundingBox[0]?.yCenter + boundingBox[0]?.height * 0.5;
-    const isCenteredX = 0.45 < facecenterX && facecenterX < 0.55;
-    const isCenteredY = 0.45 < facecenterY && facecenterY < 0.55;
+    const isCenteredX = 0.35 < facecenterX && facecenterX < 0.65;
+    const isCenteredY = 0.35 < facecenterY && facecenterY < 0.65;
     if (boundingBox.length > 0) {
       if (boundingBox.length === 1) {
         if (!isCenteredX || !isCenteredY) {
@@ -152,6 +183,16 @@ function WebcamComponent() {
         <React.Fragment key={index}>
           {line}
           {index < detectAlert.split('\n').length - 1 && <br />}
+        </React.Fragment>
+      ))
+    : null;
+
+  // logの値を改行で分割し、配列として扱う
+  const parseLog = log
+    ? log.split('\n').map((line, index) => (
+        <React.Fragment key={index}>
+          {line}
+          {index < log.split('\n').length - 1 && <br />}
         </React.Fragment>
       ))
     : null;
@@ -229,7 +270,10 @@ function WebcamComponent() {
               <div
                 key={`${index + 1}`}
                 style={{
-                  border: '4px solid red',
+                  border:
+                    detectAlert === 'Please stay still.'
+                      ? '4px solid green'
+                      : '4px solid red',
                   position: 'absolute',
                   top: `${box.yCenter * 100}%`,
                   left: `${box.xCenter * 100}%`,
@@ -242,15 +286,17 @@ function WebcamComponent() {
             ))}
             <Webcam
               ref={webcamRef}
-              // mirrored={mirror}
               forceScreenshotSourceSize
               screenshotFormat="image/jpeg"
               style={{
-                // height,
-                // width,
                 width: '100%',
                 height: '100%',
-                // position: 'absolute',
+              }}
+              videoConstraints={{
+                deviceId: {
+                  exact:
+                    'a6f33f89a138520c9652d374425d24966c3deee6038a77fe77ed19896d732dbd',
+                },
               }}
             />
           </div>
@@ -309,6 +355,14 @@ function WebcamComponent() {
               ))}
             </>
           )}
+          <p
+            style={{
+              marginTop: '20px',
+              whiteSpace: 'pre-wrap',
+            }}
+          >
+            {parseLog}
+          </p>
           {/* <button type="button" onClick={toggleMirror}>
             Toggle Mirror
           ))}
