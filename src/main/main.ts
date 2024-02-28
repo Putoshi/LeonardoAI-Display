@@ -27,13 +27,16 @@ import ImageSlicer from './ImageSlicer';
 import Segmind from './Segmind';
 import { getTmpFolderPath } from './LocalPath';
 
-// 環境設定をロード
+/** 環境設定をロード */
 const environmentConfig = require(`../../env/env.${process.env.NODE_ENV}.js`); // eslint-disable-line
 
-// AIFetcherクラスのインスタンスを作成
+/** AIFetcherクラスのインスタンス */
 const aiImageFetcher = new AIImageFetcher();
 aiImageFetcher.setEnvironmentConfig(environmentConfig);
 
+/**
+ * AppUpdaterクラス
+ */
 class AppUpdater {
   constructor() {
     log.transports.file.level = 'info';
@@ -42,9 +45,15 @@ class AppUpdater {
   }
 }
 
+/** AI画像生成ウィンドウ */
 let mainWindow: BrowserWindow | null = null;
+/** コントロールウィンドウ */
 let subWindow: BrowserWindow | null = null;
+
+/** 顔画像のURL */
 let faceImageURL: string | null = path.join(getTmpFolderPath(), 'harry.jpg');
+
+/** 画像生成中かどうかのフラグ */
 let generating = false;
 
 ipcMain.on('ipc-example', async (event, arg) => {
@@ -53,33 +62,39 @@ ipcMain.on('ipc-example', async (event, arg) => {
   event.reply('ipc-example', msgTemplate('pong'));
 });
 
-// 画像の人間判定を行う実行関数
-async function detectImage(srcImgPath: string, imagePaths: string[]) {
+/**
+ * 分割された画像の人間判定を行う実行関数
+ */
+async function detectHumanImage(srcImgPath: string, imagePaths: string[]) {
   const dataUrls = imagePaths.map((imagePath) => {
     const base64Image = fs.readFileSync(imagePath, { encoding: 'base64' });
     return `data:image/jpeg;base64,${base64Image}`;
   });
 
-  // console.log('mainWindow', mainWindow);
-
-  if (mainWindow) {
-    mainWindow.webContents.send('human-check', { srcImgPath, dataUrls });
-  }
+  mainWindow?.webContents.send('human-check', { srcImgPath, dataUrls });
 }
 
-// 画像の人間判定
+/**
+ *  画像の人間判定
+ * @param imagePath
+ */
 const performHumanDetection = async (imagePath: string) => {
-  // ここにHumanDetectionの人間判定のロジックを実装
+  /** 判定用に分割した画像のパスを格納する配列 */
   const imagePathsModified = [];
 
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 4; ++i) {
     imagePathsModified.push(imagePath.replace('.jpg', `_${i + 1}.jpg`));
-    console.log(`人間判定を実行: ${imagePathsModified[i]}`);
+    // console.log(`人間判定を実行: ${imagePathsModified[i]}`);
   }
-  detectImage(imagePath.replace('__.jpg', `.jpg`), imagePathsModified);
+
+  // 分割した画像の人間判定を実行
+  detectHumanImage(imagePath.replace('__.jpg', `.jpg`), imagePathsModified);
 };
 
-const ErrorHandler = (error: Error) => {
+/**
+ * 生成中にエラーが発生した場合の処理
+ */
+const ErrorHandler = () => {
   mainWindow?.webContents.send('generate-complete', {
     dataUrl: ``,
   });
@@ -87,14 +102,20 @@ const ErrorHandler = (error: Error) => {
   generating = false;
 };
 
-// 画像生成開始
+/**
+ * AI画像生成開始
+ * @returns
+ */
 const startGenerating = async () => {
   if (generating) {
     console.log('既に生成中です。');
     return;
   }
   generating = true;
+
   mainWindow?.webContents.send('generate-start');
+
+  subWindow?.webContents.send('log', { txt: 'Start Generating...' });
 
   let outputFolder = '';
   try {
@@ -102,10 +123,17 @@ const startGenerating = async () => {
     console.log('outputFolder', outputFolder);
   } catch (error) {
     console.error('AI画像取得リクエストでエラーが発生しました:', error);
-    ErrorHandler(error);
+    subWindow?.webContents.send('log', {
+      txt: 'AI画像取得リクエストでエラーが発生しました',
+    });
+    ErrorHandler();
   }
 
-  // 画像を分割して保存
+  /**
+   * 画像を4分割して保存
+   * @param _srcPath 元画像のパス
+   * @param _outputPath 保存先のパス
+   */
   const sliceImgPartical = async (_srcPath: string, _outputPath: string) => {
     const image = await require('sharp')(_srcPath).metadata();
     const width = image.width * 0.65; // 横幅の65%
@@ -146,9 +174,14 @@ const startGenerating = async () => {
         const srcPath = path.join(outputFolder, file);
         const outputPath = srcPath.replace('.jpg', '__.jpg');
 
-        // 画像を分割して保存
+        // 画像分割する関数を呼び出し
         await sliceImgPartical(srcPath, outputPath);
         console.log('分割完了');
+        subWindow?.webContents.send('log', {
+          txt: 'Image Split Done',
+        });
+
+        // 分割した画像から人間判定を呼び出し
         await performHumanDetection(outputPath);
       }
     });
@@ -156,20 +189,27 @@ const startGenerating = async () => {
 };
 
 // AI画像の取得リクエスト
-// IPCイベントリスナー内でAIFetcherを使用
 ipcMain.on('get-aiimage', async (event) => {
   startGenerating();
   // event.reply('get-aiimage-reply', 'Image fetch initiated');
 });
 
-// AI画像の取得リクエスト
-// IPCイベントリスナー内でAIFetcherを使用
+// AI画像の取得リクエスト リトライ
 ipcMain.on('get-aiimage-retry', async (event) => {
   generating = false;
   startGenerating();
+  subWindow?.webContents.send('log', {
+    txt: 'Retry Generating...',
+  });
   // event.reply('get-aiimage-reply', 'Image fetch initiated');
 });
 
+/**
+ * 画像から人間の部分を切り抜く関数
+ * @param srcPath 元画像のパス
+ * @param outputPath 保存先のパス
+ * @param bbox 切り抜く範囲
+ */
 const sliceHumanImg = async (
   srcPath: string,
   outputPath: string,
@@ -185,6 +225,13 @@ const sliceHumanImg = async (
   );
 };
 
+/**
+ * Swapした画像をリサイズして、元画像に合成する
+ * @param srcPath
+ * @param humanPath
+ * @param bbox
+ * @param outputPath
+ */
 const compositeImg = async (
   srcPath: string,
   humanPath: string,
@@ -195,7 +242,7 @@ const compositeImg = async (
   await require('sharp')(humanPath)
     .resize(bbox[2], bbox[3])
     .toBuffer()
-    .then((resizedOverlayBuffer) => {
+    .then((resizedOverlayBuffer: any) => {
       // リサイズしたオーバーレイ画像をベース画像に合成
       return require('sharp')(srcPath)
         .composite([
@@ -210,15 +257,27 @@ const compositeImg = async (
     })
     .then(() => {
       console.log('画像がリサイズされ、合成され、保存されました。');
+      subWindow?.webContents.send('log', {
+        txt: 'Image has been resized, and saved.',
+      });
     })
-    .catch((err) => {
-      console.error('画像のリサイズまたは合成中にエラーが発生しました:', err);
-      ErrorHandler(error as Error);
+    .catch((error: Error) => {
+      console.error('画像のリサイズまたは合成中にエラーが発生しました:', error);
+      ErrorHandler();
+      subWindow?.webContents.send('log', {
+        txt: 'An error occurred while resizing or compositing the image.',
+      });
     });
 };
 
+/**
+ * メインウインドウで人間判定された際に呼び出される関数
+ */
 ipcMain.on('human-detected', async (event, data) => {
   console.log('human-detected', data);
+  subWindow?.webContents.send('log', {
+    txt: 'Human Detected',
+  });
   // console.log('data.srcImgPath', data.srcImgPath);
   // console.log('data.humanBBox', data.humanBBox);
 
@@ -226,12 +285,20 @@ ipcMain.on('human-detected', async (event, data) => {
 
   await sliceHumanImg(data.srcImgPath, humanImgPath, data.humanBBox);
   console.log('human image sliced');
+  subWindow?.webContents.send('log', {
+    txt: 'Human Image Sliced',
+  });
 
+  /** Segmindクラスのインスタンス */
   const segmind = new Segmind();
   segmind.setEnvironmentConfig(environmentConfig);
 
+  subWindow?.webContents.send('log', {
+    txt: 'FaceSwap Start',
+  });
+
   try {
-    // ここでawaitを使用して、この処理が完了するまで待機します
+    // Segmindの顔SWAPのリクエストを行う
     await segmind.getAIImageRequest(
       {
         input_face_image: faceImageURL,
@@ -240,9 +307,14 @@ ipcMain.on('human-detected', async (event, data) => {
       data.srcImgPath.replace('.jpg', '__swap.jpg'),
     );
   } catch (error) {
-    ErrorHandler(error as Error);
+    ErrorHandler();
   }
 
+  subWindow?.webContents.send('log', {
+    txt: 'Image Compositing Start',
+  });
+
+  // Swapした画像をリサイズして、元画像に合成する
   await compositeImg(
     data.srcImgPath,
     data.srcImgPath.replace('.jpg', '__swap.jpg'),
@@ -251,18 +323,28 @@ ipcMain.on('human-detected', async (event, data) => {
   );
   console.log('composite image done');
 
+  // 合成した画像をメインウィンドウに送信
   const base64Image = fs.readFileSync(
     data.srcImgPath.replace('.jpg', '__output.jpg'),
     { encoding: 'base64' },
   );
 
+  subWindow?.webContents.send('log', {
+    txt: 'Generate Complete',
+  });
+
   mainWindow?.webContents.send('generate-complete', {
     dataUrl: `data:image/jpeg;base64,${base64Image}`,
   });
   subWindow?.webContents.send('generate-complete');
+
+  // 生成中フラグをfalseにする
   generating = false;
 });
 
+/**
+ * コンソール画面でWebcamから人間判定を受けた際画像を切り出す関数
+ */
 ipcMain.on('save-screenshot', (event, data) => {
   const defaultPath = path.join(getTmpFolderPath(), `image-${Date.now()}.jpg`);
   console.log('Saving screenshot to', defaultPath);
