@@ -7,6 +7,10 @@ const cocoSsd = require('@tensorflow-models/coco-ssd');
 
 const margin = 5;
 
+/**
+ * コンソール画面に表示する人間判定のコンポーネント
+ * @returns
+ */
 function HumanDetection() {
   const [imageSrcs, setImageSrcs] = useState([[], [], [], []]);
   const imgRefs = useRef([]);

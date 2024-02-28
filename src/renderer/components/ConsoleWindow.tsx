@@ -1,7 +1,3 @@
-// const getAIImageRequest = async () => {
-//   window.electron.ipcRenderer.sendMessage('get-aiimage');
-
-// };
 // import dummy from '../../../assets/people.png';
 import WebcamComponent from './WebcamComponent';
 

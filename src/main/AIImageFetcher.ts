@@ -1,21 +1,21 @@
 import fs from 'fs';
 import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
-import { app } from 'electron';
+// import { v4 as uuidv4 } from 'uuid';
 import ImageSaver from './ImageSaver';
 import LeonardoAIOptions from './LeonardoAIOptions';
-import Segmind from './Segmind';
-import ImageSlicer from './ImageSlicer';
 import { getTmpFolderPath } from './LocalPath';
 
-// 環境設定をロード
-const environmentConfig = require(`../../env/env.${process.env.NODE_ENV}.js`);
+/** 環境設定をロード */
+const environmentConfig = require(`../../env/env.${process.env.NODE_ENV}.js`); // eslint-disable-line
 
 interface EnvironmentConfig {
   LEONARDAI_API_KEY: string;
   LEONARDAI_API_URL: string;
 }
 
+/**
+ * LeonardoAIで画像を生成するクラス
+ */
 export default class AIImageFetcher {
   // コンストラクターを削除し、環境設定を直接クラスプロパティに設定
   environmentConfig: EnvironmentConfig = {
@@ -31,6 +31,11 @@ export default class AIImageFetcher {
     };
   }
 
+  /**
+   * LeonardoAIで生成した画像を取得する関数
+   * @param generationId 取得する画像のID
+   * @returns 取得した画像のパス
+   */
   async getAIImage(generationId: string): Promise<string> {
     const options = {
       method: 'GET',
@@ -43,6 +48,7 @@ export default class AIImageFetcher {
     console.log(`getAIImage: ${generationId}`);
 
     const outputFolder = path.join(getTmpFolderPath(), `${generationId}`);
+
     // フォルダが存在しない場合にフォルダを作成
     if (!fs.existsSync(outputFolder)) {
       fs.mkdirSync(outputFolder, { recursive: true });
@@ -50,6 +56,7 @@ export default class AIImageFetcher {
 
     // この関数の処理をPromiseでラップ
     return new Promise<string>((resolve, reject) => {
+      // 画像をフェッチする
       const fetchImage = async () => {
         try {
           const response = await fetch(
@@ -57,7 +64,6 @@ export default class AIImageFetcher {
             options,
           );
           const data = await response.json();
-          // data.generations_by_pkが存在し、nullでないことを確認
           if (
             data.generations_by_pk &&
             data.generations_by_pk.status === 'PENDING'
@@ -76,11 +82,8 @@ export default class AIImageFetcher {
                 },
               ),
             );
-
-            // this.onComplete(outputFolder);
             resolve(outputFolder);
           } else {
-            // data.generations_by_pkがnullまたは存在しない場合のエラーハンドリング
             console.error(
               'Error: generations_by_pk is null or does not exist.',
             );
@@ -91,12 +94,14 @@ export default class AIImageFetcher {
           reject(err);
         }
       };
-
       fetchImage();
     });
   }
 
-  // AI画像を取得するリクエストを送信
+  /**
+   * AI画像を取得するリクエストを送信
+   * @returns
+   */
   async getAIImageRequest(): Promise<string> {
     const options = {
       method: 'POST',
@@ -123,23 +128,4 @@ export default class AIImageFetcher {
       throw new Error('Failed to fetch AI image.');
     }
   }
-
-  // AI画像を取得する関数
-  // async getAIImage(generationId: string) {}
-
-  // async onComplete(srcFolder: string) {
-  // const outputPath = path.join(
-  //   getTmpFolderPath(),
-  //   'outputFaceImage__.jpg',
-  // );
-  // ImageSlicer.crop(srcPath, outputPath, 100, 100);
-  // console.log(outputPath);
-  // console.log(this.environmentConfig.LEONARDAI_API_KEY);
-  // const segmind = new Segmind();
-  // segmind.setEnvironmentConfig(environmentConfig);
-  // segmind.getAIImageRequest({
-  //   input_face_image: path.join(getTmpFolderPath(),, 'harry.jpg'),
-  //   output_face_image: outputPath,
-  // });
-  // }
 }

@@ -1,6 +1,8 @@
-import fs from 'fs';
 const sharp = require('sharp');
 
+/**
+ * 画像を切り取るクラス
+ */
 export default class ImageSlicer {
   static async crop(
     src: string,

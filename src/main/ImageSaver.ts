@@ -1,8 +1,16 @@
 import https from 'https';
 import fs from 'fs';
 
+/**
+ * 画像を保存するクラス
+ */
 export default class ImageSaver {
-  // 画像をURLからGETして保存する関数
+  /**
+   * 画像をURLからGETして保存する関数
+   * @param url 画像のURL
+   * @param path 保存するパス
+   * @returns Promise<void>
+   */
   static saveImage(url: string, path: string): Promise<void> {
     return new Promise((resolve, reject) => {
       https
@@ -23,7 +31,12 @@ export default class ImageSaver {
     });
   }
 
-  // Base64文字列から画像を保存する関数
+  /**
+   * Base64文字列から画像を保存する関数
+   * @param arraybuffer
+   * @param path
+   * @returns
+   */
   static saveImageFromArrayBuffer(
     arraybuffer: string,
     path: string,

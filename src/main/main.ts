@@ -51,7 +51,7 @@ let mainWindow: BrowserWindow | null = null;
 let subWindow: BrowserWindow | null = null;
 
 /** 顔画像のURL */
-let faceImageURL: string | null = path.join(getTmpFolderPath(), 'harry.jpg');
+let faceImageURL: string | null = null;
 
 /** 画像生成中かどうかのフラグ */
 let generating = false;
@@ -301,7 +301,8 @@ ipcMain.on('human-detected', async (event, data) => {
     // Segmindの顔SWAPのリクエストを行う
     await segmind.getAIImageRequest(
       {
-        input_face_image: faceImageURL,
+        input_face_image:
+          faceImageURL ?? path.join(getTmpFolderPath(), 'harry.jpg'),
         output_face_image: humanImgPath,
       },
       data.srcImgPath.replace('.jpg', '__swap.jpg'),
