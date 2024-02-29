@@ -14,6 +14,8 @@ module.exports = {
     'no-unused-vars': 'off',
     'no-console': 'off',
     'no-plusplus': 'off',
+    'no-use-before-define': 'off',
+    'no-underscore-dangle': 'off',
     '@typescript-eslint/no-unused-vars': 'error',
   },
   parserOptions: {

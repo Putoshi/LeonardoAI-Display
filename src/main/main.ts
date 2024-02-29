@@ -26,6 +26,10 @@ import AIImageFetcher from './AIImageFetcher';
 import ImageSlicer from './ImageSlicer';
 import Segmind from './Segmind';
 import { getTmpFolderPath } from './LocalPath';
+import AppUtils from './AppUtils';
+import ErrorHandler from './ErrorHandler';
+import StateManager from './StateManager';
+import WindowInstanceManager from './WindowInstanceManager';
 
 /** 環境設定をロード */
 const environmentConfig = require(`../../env/env.${process.env.NODE_ENV}.js`); // eslint-disable-line
@@ -33,6 +37,12 @@ const environmentConfig = require(`../../env/env.${process.env.NODE_ENV}.js`); /
 /** AIFetcherクラスのインスタンス */
 const aiImageFetcher = new AIImageFetcher();
 aiImageFetcher.setEnvironmentConfig(environmentConfig);
+
+/** StateManagerクラスのインスタンス */
+const stateManager = StateManager.getInstance();
+
+/** WindowInstanceManagerクラスのインスタンス */
+const windowInstanceManager = WindowInstanceManager.getInstance();
 
 /**
  * AppUpdaterクラス
@@ -45,16 +55,8 @@ class AppUpdater {
   }
 }
 
-/** AI画像生成ウィンドウ */
-let mainWindow: BrowserWindow | null = null;
-/** コントロールウィンドウ */
-let subWindow: BrowserWindow | null = null;
-
 /** 顔画像のURL */
 let faceImageURL: string | null = null;
-
-/** 画像生成中かどうかのフラグ */
-let generating = false;
 
 ipcMain.on('ipc-example', async (event, arg) => {
   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
@@ -62,18 +64,8 @@ ipcMain.on('ipc-example', async (event, arg) => {
   event.reply('ipc-example', msgTemplate('pong'));
 });
 
-/**
- * アプリをリロードする関数
- */
-const reloadApp = () => {
-  const allWindows = BrowserWindow.getAllWindows();
-  allWindows.forEach((window) => {
-    window.reload();
-  });
-};
-
 ipcMain?.on('reload-app', () => {
-  reloadApp();
+  AppUtils.reloadApp();
 });
 
 /**
@@ -85,7 +77,10 @@ async function detectHumanImage(srcImgPath: string, imagePaths: string[]) {
     return `data:image/jpeg;base64,${base64Image}`;
   });
 
-  mainWindow?.webContents.send('human-check', { srcImgPath, dataUrls });
+  windowInstanceManager.mainWindow?.webContents.send('human-check', {
+    srcImgPath,
+    dataUrls,
+  });
 }
 
 /**
@@ -106,32 +101,21 @@ const performHumanDetection = async (imagePath: string) => {
 };
 
 /**
- * 生成中にエラーが発生した場合の処理
- */
-const ErrorHandler = () => {
-  mainWindow?.webContents.send('generate-complete', {
-    dataUrl: ``,
-  });
-  subWindow?.webContents.send('generate-complete');
-  generating = false;
-
-  reloadApp();
-};
-
-/**
  * AI画像生成開始
  * @returns
  */
 const startGenerating = async () => {
-  if (generating) {
+  if (stateManager.generating) {
     console.log('既に生成中です。');
     return;
   }
-  generating = true;
+  stateManager.generating = true;
 
-  mainWindow?.webContents.send('generate-start');
+  windowInstanceManager.mainWindow?.webContents.send('generate-start');
 
-  subWindow?.webContents.send('log', { txt: 'Start Generating...' });
+  windowInstanceManager.subWindow?.webContents.send('log', {
+    txt: 'Start Generating...',
+  });
 
   let outputFolder = '';
   try {
@@ -139,10 +123,10 @@ const startGenerating = async () => {
     console.log('outputFolder', outputFolder);
   } catch (error) {
     console.error('AI画像取得リクエストでエラーが発生しました:', error);
-    subWindow?.webContents.send('log', {
+    windowInstanceManager.subWindow?.webContents.send('log', {
       txt: 'AI画像取得リクエストでエラーが発生しました',
     });
-    ErrorHandler();
+    ErrorHandler.refresh();
   }
 
   /**
@@ -193,7 +177,7 @@ const startGenerating = async () => {
         // 画像分割する関数を呼び出し
         await sliceImgPartical(srcPath, outputPath);
         console.log('分割完了');
-        subWindow?.webContents.send('log', {
+        windowInstanceManager.subWindow?.webContents.send('log', {
           txt: 'Image Split Done',
         });
 
@@ -212,9 +196,9 @@ ipcMain.on('get-aiimage', async (event) => {
 
 // AI画像の取得リクエスト リトライ
 ipcMain.on('get-aiimage-retry', async (event) => {
-  generating = false;
+  stateManager.generating = false;
   startGenerating();
-  subWindow?.webContents.send('log', {
+  windowInstanceManager.subWindow?.webContents.send('log', {
     txt: 'Retry Generating...',
   });
   // event.reply('get-aiimage-reply', 'Image fetch initiated');
@@ -273,14 +257,14 @@ const compositeImg = async (
     })
     .then(() => {
       console.log('画像がリサイズされ、合成され、保存されました。');
-      subWindow?.webContents.send('log', {
+      windowInstanceManager.subWindow?.webContents.send('log', {
         txt: 'Image has been resized, and saved.',
       });
     })
     .catch((error: Error) => {
       console.error('画像のリサイズまたは合成中にエラーが発生しました:', error);
-      ErrorHandler();
-      subWindow?.webContents.send('log', {
+      ErrorHandler.refresh();
+      windowInstanceManager.subWindow?.webContents.send('log', {
         txt: 'An error occurred while resizing or compositing the image.',
       });
     });
@@ -291,7 +275,7 @@ const compositeImg = async (
  */
 ipcMain.on('human-detected', async (event, data) => {
   console.log('human-detected', data);
-  subWindow?.webContents.send('log', {
+  windowInstanceManager.subWindow?.webContents.send('log', {
     txt: 'Human Detected',
   });
   // console.log('data.srcImgPath', data.srcImgPath);
@@ -301,7 +285,7 @@ ipcMain.on('human-detected', async (event, data) => {
 
   await sliceHumanImg(data.srcImgPath, humanImgPath, data.humanBBox);
   console.log('human image sliced');
-  subWindow?.webContents.send('log', {
+  windowInstanceManager.subWindow?.webContents.send('log', {
     txt: 'Human Image Sliced',
   });
 
@@ -309,7 +293,7 @@ ipcMain.on('human-detected', async (event, data) => {
   const segmind = new Segmind();
   segmind.setEnvironmentConfig(environmentConfig);
 
-  subWindow?.webContents.send('log', {
+  windowInstanceManager.subWindow?.webContents.send('log', {
     txt: 'FaceSwap Start',
   });
 
@@ -323,18 +307,18 @@ ipcMain.on('human-detected', async (event, data) => {
       },
       data.srcImgPath.replace('.jpg', '__swap.jpg'),
     );
-  } catch (error) {
+  } catch (error: any) {
     // console.log('FaceSwap Error:', error);
     console.error('SWAP画像取得リクエストでエラーが発生しました:', error.code);
-    subWindow?.webContents.send('log', {
+    windowInstanceManager.subWindow?.webContents.send('log', {
       txt: 'AI画像取得リクエストでエラーが発生しました',
     });
 
-    ErrorHandler();
+    ErrorHandler.refresh();
     return;
   }
 
-  subWindow?.webContents.send('log', {
+  windowInstanceManager.subWindow?.webContents.send('log', {
     txt: 'Image Compositing Start',
   });
 
@@ -353,17 +337,17 @@ ipcMain.on('human-detected', async (event, data) => {
     { encoding: 'base64' },
   );
 
-  subWindow?.webContents.send('log', {
+  windowInstanceManager.subWindow?.webContents.send('log', {
     txt: 'Generate Complete',
   });
 
-  mainWindow?.webContents.send('generate-complete', {
+  windowInstanceManager.mainWindow?.webContents.send('generate-complete', {
     dataUrl: `data:image/jpeg;base64,${base64Image}`,
   });
-  subWindow?.webContents.send('generate-complete');
+  windowInstanceManager.subWindow?.webContents.send('generate-complete');
 
   // 生成中フラグをfalseにする
-  generating = false;
+  stateManager.generating = false;
 });
 
 /**
@@ -396,13 +380,6 @@ ipcMain.on('save-screenshot', (event, data) => {
   //   );
   // }
 });
-
-// // LeonardoAIの画像取得後の処理
-// ipcMain.on('leonardo-image-fetched', async (event) => {
-//   console.log('leonardo-image-fetched');
-//   // await aiImageFetcher.getAIImageRequest();
-//   // event.reply('get-aiimage-reply', 'Image fetch initiated');
-// });
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -442,7 +419,7 @@ const createWindow = async () => {
     return path.join(RESOURCES_PATH, ...paths);
   };
 
-  mainWindow = new BrowserWindow({
+  windowInstanceManager.mainWindow = new BrowserWindow({
     show: false,
     width: 1080 / 2,
     height: 1920 / 2,
@@ -456,9 +433,9 @@ const createWindow = async () => {
     },
   });
 
-  mainWindow.loadURL(util.resolveHtmlPath('index.html'));
+  windowInstanceManager.mainWindow.loadURL(util.resolveHtmlPath('index.html'));
 
-  subWindow = new BrowserWindow({
+  windowInstanceManager.subWindow = new BrowserWindow({
     // show: false,
     width: 1080 / 2,
     height: 1920 / 2,
@@ -472,34 +449,34 @@ const createWindow = async () => {
     },
   });
 
-  subWindow.loadURL(util.resolveHtmlPath('control.html'));
+  windowInstanceManager.subWindow.loadURL(util.resolveHtmlPath('control.html'));
 
-  mainWindow.on('ready-to-show', () => {
-    if (!mainWindow) {
+  windowInstanceManager.mainWindow.on('ready-to-show', () => {
+    if (!windowInstanceManager.mainWindow) {
       throw new Error('"mainWindow" is not defined');
     }
     if (process.env.START_MINIMIZED) {
-      mainWindow.minimize();
+      windowInstanceManager.mainWindow.minimize();
     } else {
-      mainWindow.show();
+      windowInstanceManager.mainWindow.show();
     }
   });
 
-  mainWindow.on('closed', () => {
-    mainWindow = null;
-    subWindow?.close();
-    subWindow = null;
+  windowInstanceManager.mainWindow.on('closed', () => {
+    windowInstanceManager.mainWindow = null;
     app.quit();
   });
 
-  const menuBuilder = new MenuBuilder(mainWindow);
+  const menuBuilder = new MenuBuilder(windowInstanceManager.mainWindow);
   menuBuilder.buildMenu();
 
   // Open urls in the user's browser
-  mainWindow.webContents.setWindowOpenHandler((edata) => {
-    shell.openExternal(edata.url);
-    return { action: 'deny' };
-  });
+  windowInstanceManager.mainWindow?.webContents.setWindowOpenHandler(
+    (edata: any) => {
+      shell.openExternal(edata.url);
+      return { action: 'deny' };
+    },
+  );
 
   // Remove this if your app does not use auto updates
   // eslint-disable-next-line
@@ -529,7 +506,7 @@ app
     }
     createWindow();
     app.on('activate', () => {
-      if (mainWindow === null) createWindow();
+      if (windowInstanceManager.mainWindow === null) createWindow();
     });
   })
   .catch(console.log);
