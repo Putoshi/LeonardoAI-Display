@@ -12,30 +12,30 @@ const margin = 5;
  * @returns
  */
 function HumanDetection() {
-  const [imageSrcs, setImageSrcs] = useState([[], [], [], []]);
+  const [imageSrcs, setImageSrcs] = useState<string[]>(['', '', '', '']);
   const imgRefs = useRef([]);
 
-  const [personDetected, setPersonDetected] = useState(false);
-  const [compositDone, setCompositDone] = useState(false);
-  const [compositImageSrc, setCompositImageSrc] = useState('');
-  const [checking, setChecking] = useState();
-  const [srcImgPath, setSrcImgPath] = useState('');
+  const [personDetected, setPersonDetected] = useState<boolean>(false);
+  const [compositDone, setCompositDone] = useState<boolean>(false);
+  const [compositImageSrc, setCompositImageSrc] = useState<string>('');
+  const [personChecking, setPersonChecking] = useState<boolean>(false);
+  const [srcImgPath, setSrcImgPath] = useState<string>('');
   // boundingBoxを配列の配列に変更
   const [boundingBoxes, setBoundingBoxes] = useState([[], [], [], []]);
 
-  const [humanBBoxes, setHumanBBoxes] = useState([]);
+  const [humanBBoxes, setHumanBBoxes] = useState<number[][]>();
 
   useEffect(() => {
     const removeHumanCheckEveListener = window.electron.ipcRenderer.on(
       'human-check',
-      (data) => {
+      (data: { srcImgPath: string; dataUrls: string[] }) => {
         console.log('humancheckイベントを受信しました。');
 
         // 人間が検出されたかフラグを初期化
         setPersonDetected(false);
 
         // チェックフラグを初期化
-        setChecking(true);
+        setPersonChecking(true);
 
         // チェックしている画像のパスを設定
         setSrcImgPath(data.srcImgPath as string);
@@ -57,7 +57,7 @@ function HumanDetection() {
 
     const removeGeneDoneEveListener = window.electron.ipcRenderer.on(
       'generate-complete',
-      (data) => {
+      (data: { dataUrl: string }) => {
         console.log('generate-completeイベントを受信しました。');
         setCompositDone(true);
         setCompositImageSrc(data.dataUrl as string);
@@ -66,7 +66,7 @@ function HumanDetection() {
 
     const removeGeneStartEveListener = window.electron.ipcRenderer.on(
       'generate-start',
-      (data) => {
+      () => {
         console.log('generate-startイベントを受信しました。');
         // setCompositDone(false);
       },
@@ -80,28 +80,31 @@ function HumanDetection() {
   }, []);
 
   useEffect(() => {
-    // 画像の判定が終わった後の処理
-    if (checking === false) {
-      if (personDetected) {
-        console.log('人間が検出されました');
+    // srcImgPathが有効な値を持っているかチェック
+    if (srcImgPath) {
+      // 画像の判定が終わった後の処理
+      if (!personChecking) {
+        if (personDetected) {
+          console.log('人間が検出されました');
 
-        console.log('humanBBoxes', humanBBoxes);
-        const scale = LeonardoAIOptions.width / window.innerWidth;
-        window.electron.ipcRenderer.sendMessage('human-detected', {
-          srcImgPath,
-          humanBBox: [
-            Math.floor(humanBBoxes[0][0] * scale),
-            Math.floor(humanBBoxes[0][1] * scale),
-            Math.floor(humanBBoxes[0][2] * scale),
-            Math.floor(humanBBoxes[0][3] * scale),
-          ],
-        });
-      } else {
-        console.log('人間が検出されませんでした');
-        window.electron.ipcRenderer.sendMessage('get-aiimage-retry');
+          console.log('humanBBoxes', humanBBoxes);
+          const scale = LeonardoAIOptions.width / window.innerWidth;
+          window.electron.ipcRenderer.sendMessage('human-detected', {
+            srcImgPath,
+            humanBBox: [
+              Math.floor(humanBBoxes[0][0] * scale),
+              Math.floor(humanBBoxes[0][1] * scale),
+              Math.floor(humanBBoxes[0][2] * scale),
+              Math.floor(humanBBoxes[0][3] * scale),
+            ],
+          });
+        } else {
+          console.log('人間が検出されませんでした');
+          window.electron.ipcRenderer.sendMessage('get-aiimage-retry');
+        }
       }
     }
-  }, [personDetected, srcImgPath, checking, humanBBoxes]);
+  }, [personDetected, srcImgPath, personChecking, humanBBoxes]);
 
   // 画像の枠を超えないようにバウンディングボックスの座標を調整するための関数
   const adjustBBoxesToImageBounds = (bboxes: number[][]) => {
@@ -173,7 +176,7 @@ function HumanDetection() {
 
             // バウンディングボックスを面積で降順に並び替え
             const sortedBBoxes = [...humanBBoxes, ...adjustedBBoxes].sort(
-              (a, b) => {
+              (a: number[], b: number[]) => {
                 const areaA = (a[2] - a[0]) * (a[3] - a[1]); // aの面積 = 幅 * 高さ
                 const areaB = (b[2] - b[0]) * (b[3] - b[1]); // bの面積 = 幅 * 高さ
                 return areaB - areaA; // 降順に並び替え
@@ -191,7 +194,7 @@ function HumanDetection() {
           );
 
           // 画像の判定が終わったらチェックフラグをfalseにする
-          if (index === 3) setChecking(false);
+          if (index === 3) setPersonChecking(false);
 
           return predictions;
         })
@@ -240,7 +243,7 @@ function HumanDetection() {
           />
         )}
 
-        {humanBBoxes.length > 0 && (
+        {humanBBoxes?.length > 0 && (
           <div
             key={`box0`}
             style={{

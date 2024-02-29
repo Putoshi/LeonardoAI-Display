@@ -62,11 +62,18 @@ ipcMain.on('ipc-example', async (event, arg) => {
   event.reply('ipc-example', msgTemplate('pong'));
 });
 
-ipcMain?.on('reload-app', () => {
+/**
+ * アプリをリロードする関数
+ */
+const reloadApp = () => {
   const allWindows = BrowserWindow.getAllWindows();
   allWindows.forEach((window) => {
     window.reload();
   });
+};
+
+ipcMain?.on('reload-app', () => {
+  reloadApp();
 });
 
 /**
@@ -107,6 +114,8 @@ const ErrorHandler = () => {
   });
   subWindow?.webContents.send('generate-complete');
   generating = false;
+
+  reloadApp();
 };
 
 /**
