@@ -16,6 +16,7 @@ module.exports = {
     'no-plusplus': 'off',
     'no-use-before-define': 'off',
     'no-underscore-dangle': 'off',
+    'global-require': 'off',
     '@typescript-eslint/no-unused-vars': 'error',
   },
   parserOptions: {
