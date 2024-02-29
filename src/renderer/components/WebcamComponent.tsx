@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import Webcam from 'react-webcam';
 import { CameraOptions, useFaceDetection } from 'react-use-face-detection';
 import FaceDetection from '@mediapipe/face_detection';
@@ -54,7 +54,7 @@ function WebcamComponent() {
   /**
    * カメラデバイスのIDを取得する関数
    */
-  const getCameraDeviceIds = async () => {
+  const getCameraDeviceIds = useCallback(async () => {
     console.log('getCameraDeviceIds');
 
     const devices = await navigator.mediaDevices.enumerateDevices();
@@ -69,9 +69,13 @@ function WebcamComponent() {
     const storedIdx: number =
       parseInt(localStorage.getItem('cameraDeviceIdx') as string, 10) || 0;
 
+    // storedIdxがvideoDevicesの範囲内にあるか確認し、範囲外の場合は0を使用
+    const safeIdx =
+      storedIdx >= 0 && storedIdx < videoDevices.length ? storedIdx : 0;
+
     // cameraDeviceIdxで指定されたデバイスのIDを返す
-    return videoDevices.length > 0 ? videoDevices[storedIdx].deviceId : null;
-  };
+    return videoDevices.length > 0 ? videoDevices[safeIdx]?.deviceId : null;
+  }, []);
 
   const { webcamRef, boundingBox, isLoading, detected, facesDetected } =
     useFaceDetection({
@@ -113,15 +117,29 @@ function WebcamComponent() {
   };
 
   useEffect(() => {
-    getCameraDeviceIds()
-      .then((id) => {
+    const fetchDeviceId = async () => {
+      try {
+        const id = await getCameraDeviceIds();
         setDeviceId(id);
         console.log(id);
-        return null; // 追加
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error('Error getting camera device ID:', error);
-      });
+      }
+    };
+
+    fetchDeviceId();
+  }, []);
+
+  useEffect(() => {
+    // getCameraDeviceIds()
+    //   .then((id) => {
+    //     setDeviceId(id);
+    //     console.log(id);
+    //     return null; // 追加
+    //   })
+    //   .catch((error) => {
+    //     console.error('Error getting camera device ID:', error);
+    //   });
 
     const removeListener = window.electron.ipcRenderer.on(
       'generate-complete',
