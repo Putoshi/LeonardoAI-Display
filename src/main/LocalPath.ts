@@ -8,4 +8,13 @@ import { app } from 'electron';
 const getTmpFolderPath: () => string = () => {
   return path.join(app.getPath('downloads'), 'tmp/');
 };
-export { getTmpFolderPath };
+
+/**
+ * 設定ファイルのパスを取得する関数
+ * @returns 設定ファイルのパス
+ */
+const getConfigPath: () => string = () => {
+  return path.join(app.getPath('userData'), 'config.json');
+};
+
+export { getTmpFolderPath, getConfigPath };
