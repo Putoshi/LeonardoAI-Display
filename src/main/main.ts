@@ -23,11 +23,12 @@ import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 import * as util from './util';
-import { getTmpFolderPath } from './LocalPath';
+import { getTmpFolderPath, getConfigPath } from './LocalPath';
 import AppUtils from './AppUtils';
 import StateManager from './StateManager';
 import WindowInstanceManager from './WindowInstanceManager';
 import Generate from './Generate';
+import { loadConfig } from './ConfigManager';
 
 /** StateManagerクラスのインスタンス */
 const stateManager = StateManager.getInstance();
@@ -46,6 +47,10 @@ class AppUpdater {
   }
 }
 
+/**
+ * ディスプレイ情報を取得する
+ * @returns ディスプレイ情報
+ */
 const getDisplayInfo: any = () => {
   const electronScreen = electron.screen;
   const displays = electronScreen.getAllDisplays();
@@ -168,6 +173,7 @@ const createWindow = async () => {
     },
   });
 
+  /** メインウィンドウの設定 */
   windowInstanceManager.mainWindow.setAlwaysOnTop(true, 'screen-saver'); // 常に最前面に表示する
   windowInstanceManager.mainWindow.setVisibleOnAllWorkspaces(true); // ワークスペース（デスクトップ）を移動しても表示される
   windowInstanceManager.mainWindow.loadURL(util.resolveHtmlPath('index.html'));
@@ -232,17 +238,36 @@ const createWindow = async () => {
 /**
  * グローバルショートカットの登録
  */
-const registerGlobalShortcuts = () => {
-  // Fキーでえフルスクリーン切り替え
-  globalShortcut.register('Command+M', () => {
-    const isFullScreenMain = windowInstanceManager.mainWindow?.isFullScreen();
-    windowInstanceManager.mainWindow?.setFullScreen(!isFullScreenMain);
+const registerGlobalShortcuts = async () => {
+  // 設定ファイルを読み込む
+  const config = await loadConfig();
+  if (!config) {
+    console.error('設定ファイルの読み込みに失敗しました');
+    return;
+  }
+  // Option+Mキーでメインウィンドウをメインディスプレイにフルスクリーン表示
+  globalShortcut.register('Option+M', () => {
+    const displays = electron.screen.getAllDisplays();
+    const primaryDisplay = displays[config.primaryDisplayIndex]; // メインディスプレイは通常、配列の最初の要素です
+    if (primaryDisplay) {
+      const isMainWindowFullScreen =
+        windowInstanceManager.mainWindow?.isFullScreen();
+      windowInstanceManager.mainWindow?.setBounds(primaryDisplay.bounds);
+      windowInstanceManager.mainWindow?.setFullScreen(!isMainWindowFullScreen);
+    }
   });
 
-  // Sキーでフルスクリーン切り替え
-  globalShortcut.register('Command+S', () => {
-    const isFullScreenSub = windowInstanceManager.subWindow?.isFullScreen();
-    windowInstanceManager.subWindow?.setFullScreen(!isFullScreenSub);
+  // Option+Sキーでサブウィンドウをサブディスプレイにフルスクリーン表示
+  globalShortcut.register('Option+S', () => {
+    const displays = electron.screen.getAllDisplays();
+    // サブディスプレイが存在する場合、それは通常配列の2番目の要素です（インデックス1）
+    if (displays.length > 1) {
+      const secondaryDisplay = displays[config.secondaryDisplayIndex];
+      const isSubWindowFullScreen =
+        windowInstanceManager.subWindow?.isFullScreen();
+      windowInstanceManager.subWindow?.setBounds(secondaryDisplay.bounds);
+      windowInstanceManager.subWindow?.setFullScreen(!isSubWindowFullScreen);
+    }
   });
 };
 
@@ -274,7 +299,5 @@ app
   })
   .then(async () => {
     registerGlobalShortcuts();
-    // windowInstanceManager.mainWindow?.on('keyup', toggleFullScreen);
-    // windowInstanceManager.subWindow?.on('keyup', toggleFullScreen);
   })
   .catch(console.log);
