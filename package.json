@@ -111,6 +111,7 @@
     "@types/webpack-bundle-analyzer": "^4.6.3",
     "@typescript-eslint/eslint-plugin": "^6.20.0",
     "@typescript-eslint/parser": "^6.20.0",
+    "@vladmandic/human": "^3.2.1",
     "browserslist-config-erb": "^0.0.3",
     "chalk": "^4.1.2",
     "concurrently": "^8.2.2",
