@@ -10,7 +10,7 @@
  */
 import path from 'path';
 import fs from 'fs';
-import {
+import electron, {
   app,
   BrowserWindow,
   shell,
@@ -45,8 +45,18 @@ class AppUpdater {
   }
 }
 
-// /** 顔画像のURL */
-// let faceImageURL: string | null = null;
+const getDisplayInfo: any = () => {
+  const electronScreen = electron.screen;
+  const displays = electronScreen.getAllDisplays();
+  for (var i in displays) {
+    // if (displays[i].bounds.x != 0 || displays[i].bounds.y != 0) {
+    //   externalDisplay = displays[i];
+    //   break;
+    // }
+    console.log(displays[i]);
+  }
+  return displays;
+};
 
 ipcMain.on('ipc-example', async (event, arg) => {
   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
@@ -163,6 +173,8 @@ const createWindow = async () => {
     // show: false,
     width: 1080 / 2,
     height: 1920 / 2,
+    x: getDisplayInfo()[1].bounds.x - 1000,
+    y: getDisplayInfo()[1].bounds.y,
     icon: getAssetPath('icon.png'),
     webPreferences: {
       // nodeIntegration: true,
@@ -172,6 +184,13 @@ const createWindow = async () => {
         : path.join(__dirname, '../../.erb/dll/preload.js'),
     },
   });
+
+  // setTimeout(() => {
+  //   const x =
+  //     getDisplayInfo()[0].workArea.x + getDisplayInfo()[0].workArea.width;
+  //   console.log('x', x);
+  //   windowInstanceManager.subWindow.x = x;
+  // }, 3000);
 
   windowInstanceManager.subWindow.loadURL(util.resolveHtmlPath('control.html'));
 
