@@ -13,6 +13,7 @@ import fs from 'fs';
 import electron, {
   app,
   BrowserWindow,
+  globalShortcut,
   shell,
   ipcMain,
   dialog,
@@ -167,14 +168,16 @@ const createWindow = async () => {
     },
   });
 
+  windowInstanceManager.mainWindow.setAlwaysOnTop(true, 'screen-saver'); // 常に最前面に表示する
+  windowInstanceManager.mainWindow.setVisibleOnAllWorkspaces(true); // ワークスペース（デスクトップ）を移動しても表示される
   windowInstanceManager.mainWindow.loadURL(util.resolveHtmlPath('index.html'));
 
   windowInstanceManager.subWindow = new BrowserWindow({
     // show: false,
     width: 1080 / 2,
     height: 1920 / 2,
-    x: getDisplayInfo()[1].bounds.x - 1000,
-    y: getDisplayInfo()[1].bounds.y,
+    x: getDisplayInfo()[1].bounds.x + 50, // サブディスプレイのX座標 + 50
+    y: getDisplayInfo()[1].bounds.y + 2500, // サブディスプレイのY座標 + 50
     icon: getAssetPath('icon.png'),
     webPreferences: {
       // nodeIntegration: true,
@@ -227,6 +230,23 @@ const createWindow = async () => {
 };
 
 /**
+ * グローバルショートカットの登録
+ */
+const registerGlobalShortcuts = () => {
+  // Fキーでえフルスクリーン切り替え
+  globalShortcut.register('Command+M', () => {
+    const isFullScreenMain = windowInstanceManager.mainWindow?.isFullScreen();
+    windowInstanceManager.mainWindow?.setFullScreen(!isFullScreenMain);
+  });
+
+  // Sキーでフルスクリーン切り替え
+  globalShortcut.register('Command+S', () => {
+    const isFullScreenSub = windowInstanceManager.subWindow?.isFullScreen();
+    windowInstanceManager.subWindow?.setFullScreen(!isFullScreenSub);
+  });
+};
+
+/**
  * Add event listeners...
  */
 
@@ -251,5 +271,10 @@ app
     app.on('activate', () => {
       if (windowInstanceManager.mainWindow === null) createWindow();
     });
+  })
+  .then(async () => {
+    registerGlobalShortcuts();
+    // windowInstanceManager.mainWindow?.on('keyup', toggleFullScreen);
+    // windowInstanceManager.subWindow?.on('keyup', toggleFullScreen);
   })
   .catch(console.log);
