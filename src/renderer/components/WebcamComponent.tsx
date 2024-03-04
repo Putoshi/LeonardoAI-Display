@@ -1,5 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import Webcam from 'react-webcam';
+import WebcamAnalysis from './WebcamAnalysis';
+
 import { CameraOptions, useFaceDetection } from 'react-use-face-detection';
 import FaceDetection from '@mediapipe/face_detection';
 import { Camera } from '@mediapipe/camera_utils';
@@ -51,49 +53,6 @@ function WebcamComponent() {
     setMirror(!mirror);
   };
 
-  /**
-   * カメラデバイスのIDを取得する関数
-   */
-  const getCameraDeviceIds = useCallback(async () => {
-    console.log('getCameraDeviceIds');
-
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const videoDevices = devices.filter(
-      (device) => device.kind === 'videoinput',
-    );
-    console.log('videoDevices', videoDevices);
-    // videoDevices.forEach((device, index) => {
-    //   console.log('device', device);
-    // });
-
-    const storedIdx: number =
-      parseInt(localStorage.getItem('cameraDeviceIdx') as string, 10) || 0;
-
-    // storedIdxがvideoDevicesの範囲内にあるか確認し、範囲外の場合は0を使用
-    const safeIdx =
-      storedIdx >= 0 && storedIdx < videoDevices.length ? storedIdx : 0;
-
-    // cameraDeviceIdxで指定されたデバイスのIDを返す
-    return videoDevices.length > 0 ? videoDevices[safeIdx]?.deviceId : null;
-  }, []);
-
-  const { webcamRef, boundingBox, isLoading, detected, facesDetected } =
-    useFaceDetection({
-      faceDetectionOptions: {
-        model: 'short',
-      },
-      faceDetection: new FaceDetection.FaceDetection({
-        locateFile: (file) =>
-          `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`,
-      }),
-      camera: ({ mediaSrc, onFrame }: CameraOptions) =>
-        new Camera(mediaSrc, {
-          onFrame,
-          width,
-          height,
-        }),
-    });
-
   const saveScreenshot = () => {
     if (webcamRef) {
       const webcamCurrent = webcamRef.current;
@@ -112,35 +71,7 @@ function WebcamComponent() {
     }
   };
 
-  const reloadApp = () => {
-    window.electron.ipcRenderer.sendMessage('reload-app');
-  };
-
   useEffect(() => {
-    const fetchDeviceId = async () => {
-      try {
-        const id = await getCameraDeviceIds();
-        setDeviceId(id);
-        console.log(id);
-      } catch (error) {
-        console.error('Error getting camera device ID:', error);
-      }
-    };
-
-    fetchDeviceId();
-  }, []);
-
-  useEffect(() => {
-    // getCameraDeviceIds()
-    //   .then((id) => {
-    //     setDeviceId(id);
-    //     console.log(id);
-    //     return null; // 追加
-    //   })
-    //   .catch((error) => {
-    //     console.error('Error getting camera device ID:', error);
-    //   });
-
     const removeListener = window.electron.ipcRenderer.on(
       'generate-complete',
       (data) => {
@@ -168,23 +99,6 @@ function WebcamComponent() {
       removeLogListener();
     };
   }, []);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key >= '0' && event.key <= '9') {
-        const newIdx = parseInt(event.key, 10);
-        localStorage.setItem('cameraDeviceIdx', newIdx.toString());
-        console.log('cameraDeviceIdx:', newIdx);
-        reloadApp();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [getCameraDeviceIds]); // 依存配列にgetCameraDeviceIdsを追加
 
   // 顔が中央にあるか、顔が大きすぎるか、顔が小さすぎるかを判定
   useEffect(() => {
@@ -333,7 +247,7 @@ function WebcamComponent() {
               transform: mirror ? 'scaleX(-1)' : 'none',
             }}
           >
-            {boundingBox.map((box, index) => (
+            {/* {boundingBox.map((box, index) => (
               <div
                 key={`${index + 1}`}
                 style={{
@@ -350,7 +264,8 @@ function WebcamComponent() {
                   zIndex: 1,
                 }}
               />
-            ))}
+            ))} */}
+            <WebcamAnalysis />
             <Webcam
               ref={webcamRef}
               forceScreenshotSourceSize
@@ -423,11 +338,11 @@ function WebcamComponent() {
           {!flash && (
             <>
               <p>{`Number of faces detected: ${facesDetected}`}</p>
-              {boundingBox.map((box, index) => (
+              {/* {boundingBox.map((box, index) => (
                 <p key={index}>
                   {`Face ${index + 1}: (${box.xCenter.toFixed(3)}, ${box.yCenter.toFixed(3)}, width: ${box.width.toFixed(3)}, height: ${box.height.toFixed(3)})`}
                 </p>
-              ))}
+              ))} */}
             </>
           )}
           <p

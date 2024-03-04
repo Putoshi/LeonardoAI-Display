@@ -1,4 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useAtom } from 'jotai';
+import { InterpolatedFaceAtom } from '../states/InterpolatedFaceAtom';
 import { Human, Config } from '@vladmandic/human';
 
 const squareSize = 300; // 正方形のサイズを300pxに設定
@@ -26,6 +28,71 @@ function WebcamAnalysis() {
   const [log, setLog] = useState<string[]>([]);
   const [status, setStatus] = useState<string>('');
 
+  const [deviceId, setDeviceId] = useState<string | null>(null);
+  const [, setInterpolatedFace] = useAtom(InterpolatedFaceAtom);
+
+  export const interpolatedFaceAtom = atom<any>(null);
+
+  /**
+   * カメラデバイスのIDを取得する関数
+   */
+  const getCameraDeviceIds = useCallback(async () => {
+    console.log('getCameraDeviceIds');
+
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const videoDevices = devices.filter(
+      (device) => device.kind === 'videoinput',
+    );
+    console.log('videoDevices', videoDevices);
+    // videoDevices.forEach((device, index) => {
+    //   console.log('device', device);
+    // });
+
+    const storedIdx: number =
+      parseInt(localStorage.getItem('cameraDeviceIdx') as string, 10) || 0;
+
+    // storedIdxがvideoDevicesの範囲内にあるか確認し、範囲外の場合は0を使用
+    const safeIdx =
+      storedIdx >= 0 && storedIdx < videoDevices.length ? storedIdx : 0;
+
+    // cameraDeviceIdxで指定されたデバイスのIDを返す
+    return videoDevices.length > 0 ? videoDevices[safeIdx]?.deviceId : null;
+  }, []);
+
+  useEffect(() => {
+    const fetchDeviceId = async () => {
+      try {
+        const id = await getCameraDeviceIds();
+        setDeviceId(id);
+      } catch (error) {
+        console.error('Error getting camera device ID:', error);
+      }
+    };
+
+    fetchDeviceId();
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key >= '0' && event.key <= '9') {
+        const newIdx = parseInt(event.key, 10);
+        localStorage.setItem('cameraDeviceIdx', newIdx.toString());
+        console.log('cameraDeviceIdx:', newIdx);
+        reloadApp();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [getCameraDeviceIds]); // 依存配列にgetCameraDeviceIdsを追加
+
+  const reloadApp = () => {
+    window.electron.ipcRenderer.sendMessage('reload-app');
+  };
+
   useEffect(() => {
     const human = new Human(humanConfig);
     human.env.perfadd = false;
@@ -37,15 +104,24 @@ function WebcamAnalysis() {
       console.log(message);
     };
 
-    const initWebCam = async () => {
+    const initWebCam = async (deviceId: string | null) => {
       setStatus('starting webcam...');
+      console.log('initWebCam', deviceId);
+
       const options: MediaStreamConstraints = {
         audio: false,
-        video: {
-          facingMode: 'user',
-          resizeMode: 'none',
-          width: { ideal: document.body.clientWidth },
-        },
+        video: deviceId
+          ? {
+              deviceId,
+              facingMode: 'user',
+              resizeMode: 'none',
+              width: { ideal: document.body.clientWidth },
+            }
+          : {
+              facingMode: 'user',
+              resizeMode: 'none',
+              width: { ideal: document.body.clientWidth },
+            },
       };
       try {
         const stream = await navigator.mediaDevices.getUserMedia(options);
@@ -98,9 +174,13 @@ function WebcamAnalysis() {
 
           // 反転させた映像を含むtempCanvasを使用して解析
           const interpolated = await human.next(human.result);
-          if (interpolated.face.length > 0) {
-            console.log('interpolated', interpolated.face[0]);
-          }
+
+          // drawLoop関数内でinterpolated.face[0]を取得した後に状態を更新
+          // if (interpolated.face.length > 0) {
+          //   console.log('interpolated', interpolated.face[0]);
+          //   setInterpolatedFace(interpolated.face[0]);
+          // }
+          setInterpolatedFace(interpolated.face);
 
           await human.draw.canvas(tempCanvas, canvasRef.current); // tempCanvasを使用
           await human.draw.all(canvasRef.current, interpolated);
@@ -116,13 +196,13 @@ function WebcamAnalysis() {
       await human.load();
       setStatus('warmup...');
       await human.warmup();
-      await initWebCam();
+      await initWebCam(deviceId);
       detectionLoop();
       drawLoop();
     };
 
     main();
-  }, []);
+  }, [deviceId]);
 
   return (
     <div>
