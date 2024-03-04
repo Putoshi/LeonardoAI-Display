@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useAtom } from 'jotai';
-import { InterpolatedFaceAtom } from '../states/InterpolatedFaceAtom';
 import { Human, Config } from '@vladmandic/human';
+import InterpolatedFaceAtom from '../states/InterpolatedFaceAtom';
 
 const squareSize = 300; // 正方形のサイズを300pxに設定
 
@@ -22,16 +22,18 @@ const humanConfig: Partial<Config> = {
   gesture: { enabled: true },
 };
 
-function WebcamAnalysis() {
+function WebcamAnalysis({
+  onVideoRef,
+}: {
+  onVideoRef: (instance: HTMLVideoElement | null) => void;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [log, setLog] = useState<string[]>([]);
   const [status, setStatus] = useState<string>('');
 
   const [deviceId, setDeviceId] = useState<string | null>(null);
-  const [, setInterpolatedFace] = useAtom(InterpolatedFaceAtom);
-
-  export const interpolatedFaceAtom = atom<any>(null);
+  const [interpolatedFace, setInterpolatedFace] = useAtom(InterpolatedFaceAtom);
 
   /**
    * カメラデバイスのIDを取得する関数
@@ -71,6 +73,17 @@ function WebcamAnalysis() {
 
     fetchDeviceId();
   }, []);
+
+  useEffect(() => {
+    // onVideoRefが関数であるかどうかを確認
+    if (typeof onVideoRef === 'function') {
+      if (videoRef.current) {
+        onVideoRef(videoRef.current);
+      }
+      // コンポーネントのアンマウント時にnullを渡してクリーンアップ
+      return () => onVideoRef(null);
+    }
+  }, [onVideoRef]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -127,7 +140,9 @@ function WebcamAnalysis() {
         const stream = await navigator.mediaDevices.getUserMedia(options);
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          videoRef.current.play();
+          videoRef.current
+            .play()
+            .catch((error) => console.log('Video play error:', error));
           await new Promise((resolve) => {
             videoRef.current!.onloadeddata = () => {
               resolve(true);
@@ -176,11 +191,12 @@ function WebcamAnalysis() {
           const interpolated = await human.next(human.result);
 
           // drawLoop関数内でinterpolated.face[0]を取得した後に状態を更新
-          // if (interpolated.face.length > 0) {
-          //   console.log('interpolated', interpolated.face[0]);
-          //   setInterpolatedFace(interpolated.face[0]);
-          // }
-          setInterpolatedFace(interpolated.face);
+          if (interpolated.face.length > 0) {
+            // console.log('interpolated', interpolated.face[0]);
+            setInterpolatedFace(interpolated.face[0]);
+          } else {
+            setInterpolatedFace(null);
+          }
 
           await human.draw.canvas(tempCanvas, canvasRef.current); // tempCanvasを使用
           await human.draw.all(canvasRef.current, interpolated);

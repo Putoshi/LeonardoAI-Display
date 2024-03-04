@@ -6,8 +6,8 @@ import WebcamAnalysis from './components/WebcamAnalysis';
 function TopView() {
   return (
     <div>
-      <WebcamAnalysis />
-      {/* <ConsoleWindow /> */}
+      {/* <WebcamAnalysis /> */}
+      <ConsoleWindow />
     </div>
   );
 }
