@@ -1,13 +1,14 @@
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
 import './Control.css';
 import ConsoleWindow from './components/ConsoleWindow';
-import WebcamAnalysis from './components/WebcamAnalysis';
+import ResultQR from './components/ResultQR';
 
 function TopView() {
   return (
     <div>
       {/* <WebcamAnalysis /> */}
       <ConsoleWindow />
+      <ResultQR />
     </div>
   );
 }

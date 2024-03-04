@@ -2,6 +2,7 @@
 import fs from 'fs';
 import path from 'path';
 import { ipcMain } from 'electron';
+import axios from 'axios';
 import AIImageFetcher from './AIImageFetcher';
 import ImageSlicer from './ImageSlicer';
 import Segmind from './Segmind';
@@ -281,7 +282,32 @@ ipcMain.on('human-detected', async (event, data) => {
   windowInstanceManager.mainWindow?.webContents.send('generate-complete', {
     dataUrl: `data:image/jpeg;base64,${base64Image}`,
   });
-  windowInstanceManager.subWindow?.webContents.send('generate-complete');
+
+  try {
+    const response = await axios.post(
+      environmentConfig.IMAGE_UPLOADER_API_URL,
+      {
+        image: base64Image,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': environmentConfig.IMAGE_UPLOADER_API_KEY,
+        },
+      },
+    );
+    console.log('画像をアップロードしました:', response.data.uploadPath);
+
+    windowInstanceManager.subWindow?.webContents.send('generate-qr', {
+      qrUrl: response.data.uploadPath,
+    });
+  } catch (error) {
+    console.error('QRコードの生成に失敗しました:', error);
+  }
+
+  windowInstanceManager.subWindow?.webContents.send('generate-complete', {
+    dataUrl: `data:image/jpeg;base64,${base64Image}`,
+  });
 
   // 生成中フラグをfalseにする
   stateManager.generating = false;

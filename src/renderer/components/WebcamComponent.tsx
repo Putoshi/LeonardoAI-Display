@@ -1,23 +1,14 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
-import Webcam from 'react-webcam';
-import WebcamAnalysis from './WebcamAnalysis';
-
-import { CameraOptions, useFaceDetection } from 'react-use-face-detection';
-import FaceDetection from '@mediapipe/face_detection';
-import { Camera } from '@mediapipe/camera_utils';
+import React, { useRef, useState, useEffect } from 'react';
 import { atom, useAtom } from 'jotai';
-import InterpolatedFaceAtom from '../states/InterpolatedFaceAtom'; // InterpolatedFaceAtomのインポート
 import { motion } from 'framer-motion';
+import InterpolatedFaceAtom from '../states/InterpolatedFaceAtom';
+import WebcamAnalysis from './WebcamAnalysis';
 import dummy from '../../../assets/people.png';
-
-const width = 500;
-const height = 500;
 
 const mirrorAtom = atom<boolean>(true);
 const faceDetectedAtom = atom<boolean>(false);
 const detectAlertAtom = atom<string>('');
 const logAtom = atom<string>('');
-const cameraDeviceIdxAtom = atom<number>(0);
 
 /**
  * ヘッダーに出すアラート文言
@@ -28,21 +19,22 @@ const alertMessagesAtom = atom({
   still: 'Please stay still.',
   alone: 'Please be alone on camera.',
   creating: 'Creating Image with generative AI.\n Please wait a moment...',
+  complete: 'Image created successfully!',
   error: 'Error...!',
 });
 
 const captureVideoFrame = (
   videoInput: HTMLVideoElement | string,
-  format: string = 'jpeg',
-  quality: number = 0.92,
+  formatInput: string = 'jpeg',
+  qualityInput: number = 0.92,
 ) => {
-  let video: HTMLVideoElement | null =
+  const video: HTMLVideoElement | null =
     typeof videoInput === 'string'
       ? (document.querySelector(videoInput) as HTMLVideoElement)
       : videoInput;
 
-  format = format || 'jpeg';
-  quality = quality || 0.92;
+  const format = formatInput || 'jpeg';
+  const quality = qualityInput || 0.92;
 
   if (!video || (format !== 'png' && format !== 'jpeg')) {
     return false;
@@ -58,7 +50,7 @@ const captureVideoFrame = (
   }
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-  const dataUri = canvas.toDataURL('image/' + format, quality);
+  const dataUri = canvas.toDataURL(`image/${format}`, quality);
   const data = dataUri.split(',')[1];
   const mimeType = dataUri.split(';')[0].slice(5);
 
@@ -71,7 +63,7 @@ const captureVideoFrame = (
   }
 
   const blob = new Blob([arr], { type: mimeType });
-  return { blob: blob, dataUri: dataUri, format: format };
+  return { blob, dataUri, format };
 };
 
 /**
@@ -83,15 +75,15 @@ function WebcamComponent() {
   const [faceDetected, setFaceDetected] = useAtom(faceDetectedAtom);
   const [detectAlert, setDetectAlert] = useAtom(detectAlertAtom);
   const detectionTimeoutRef = useRef<NodeJS.Timeout | null>(null); // eslint-disable-line
-  const [alertMessages, setAlertMessages] = useAtom(alertMessagesAtom);
+  const [alertMessages] = useAtom(alertMessagesAtom);
   const [log, setLog] = useAtom(logAtom);
 
   const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
   const [flash, setFlash] = useState<boolean>(false);
   const [detected, setDetected] = useState<boolean>(false);
-  const [deviceId, setDeviceId] = useState<string | null>(null);
 
-  const [interpolatedFace] = useAtom(InterpolatedFaceAtom); // InterpolatedFaceAtomの値を読み取る
+  const [interpolatedFace] = useAtom(InterpolatedFaceAtom);
+
   const webcamRef = useRef<HTMLVideoElement | null>(null);
 
   /**
@@ -109,13 +101,11 @@ function WebcamComponent() {
   };
 
   const saveScreenshot = () => {
-    console.log(`saveScreenshot: ${webcamRef.current}`);
-
     if (webcamRef.current) {
       const webcamCurrent = webcamRef.current;
-      console.log(webcamCurrent);
 
       if (webcamCurrent) {
+        console.log(`saveScreenshot`);
         const screenshot = captureVideoFrame(webcamCurrent, 'jpeg', 0.92);
         if (screenshot) {
           // console.log(screenshot.dataUri);
@@ -133,8 +123,8 @@ function WebcamComponent() {
   useEffect(() => {
     const removeListener = window.electron.ipcRenderer.on(
       'generate-complete',
-      (data) => {
-        console.log('generate-completeイベントを受信しました。');
+      (data: any) => {
+        console.log('generate-completeイベントを受信しました。', data);
         setDetectAlert(alertMessages.complete);
         setScreenshotUrl(null);
         setFlash(false);
