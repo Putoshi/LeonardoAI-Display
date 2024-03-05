@@ -16,14 +16,14 @@ import electron, {
   globalShortcut,
   shell,
   ipcMain,
-  dialog,
+  // dialog,
   systemPreferences,
 } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 import * as util from './util';
-import { getTmpFolderPath, getConfigPath } from './LocalPath';
+import { getTmpFolderPath } from './LocalPath';
 import AppUtils from './AppUtils';
 import StateManager from './StateManager';
 import WindowInstanceManager from './WindowInstanceManager';
@@ -54,13 +54,9 @@ class AppUpdater {
 const getDisplayInfo: any = () => {
   const electronScreen = electron.screen;
   const displays = electronScreen.getAllDisplays();
-  for (var i in displays) {
-    // if (displays[i].bounds.x != 0 || displays[i].bounds.y != 0) {
-    //   externalDisplay = displays[i];
-    //   break;
-    // }
-    console.log(displays[i]);
-  }
+  displays.forEach((display: any) => {
+    console.log(display);
+  });
   return displays;
 };
 
@@ -75,13 +71,13 @@ ipcMain?.on('reload-app', () => {
 });
 
 // AI画像の取得リクエスト
-ipcMain.on('get-aiimage', async (event) => {
+ipcMain.on('get-aiimage', async () => {
   Generate.start();
   // event.reply('get-aiimage-reply', 'Image fetch initiated');
 });
 
 // AI画像の取得リクエスト リトライ
-ipcMain.on('get-aiimage-retry', async (event) => {
+ipcMain.on('get-aiimage-retry', async () => {
   stateManager.generating = false;
   Generate.start();
   windowInstanceManager.subWindow?.webContents.send('log', {

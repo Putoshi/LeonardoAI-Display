@@ -184,16 +184,16 @@ function WebcamAnalysis({
           tempCanvas.width = videoRef.current.videoWidth;
           tempCanvas.height = videoRef.current.videoHeight;
           // 映像を反転させて描画
-          tempCtx.scale(-1, 1);
-          tempCtx.translate(-tempCanvas.width, 0);
-          tempCtx.drawImage(
+          tempCtx?.scale(-1, 1);
+          tempCtx?.translate(-tempCanvas.width, 0);
+          tempCtx?.drawImage(
             videoRef.current,
             0,
             0,
             tempCanvas.width,
             tempCanvas.height,
           );
-          tempCtx.restore();
+          tempCtx?.restore();
 
           // 反転させた映像を含むtempCanvasを使用して解析
           const interpolated = await human.next(human.result);
