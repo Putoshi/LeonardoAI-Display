@@ -5,7 +5,7 @@ require('@tensorflow/tfjs-backend-cpu');
 require('@tensorflow/tfjs-backend-webgl');
 const cocoSsd = require('@tensorflow-models/coco-ssd');
 
-const margin = 5;
+const margin = 10;
 
 /**
  * コンソール画面に表示する人間判定のコンポーネント

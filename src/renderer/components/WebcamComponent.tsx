@@ -81,6 +81,11 @@ function WebcamComponent() {
   const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
   const [flash, setFlash] = useState<boolean>(false);
   const [detected, setDetected] = useState<boolean>(false);
+  const [age, setAge] = useState<number>(0);
+  const [gender, setGender] = useState<string>('');
+  const [genderScore, setGenderScore] = useState<number>(0);
+  const [faceDistance, setfaceDistance] = useState<number>(0);
+  const [faceScore, setfaceScore] = useState<number>(0);
 
   const [interpolatedFace] = useAtom(InterpolatedFaceAtom);
 
@@ -157,6 +162,14 @@ function WebcamComponent() {
     }
 
     if (interpolatedFace) {
+      // console.log(interpolatedFace);
+
+      setAge(interpolatedFace.age);
+      setGender(interpolatedFace.gender);
+      setGenderScore(interpolatedFace.genderScore);
+      setfaceDistance(interpolatedFace.distance);
+      setfaceScore(interpolatedFace.score);
+
       setDetected(true);
       const facecenterX =
         interpolatedFace.boxRaw[0] + interpolatedFace.boxRaw[2] * 0.5;
@@ -342,15 +355,21 @@ function WebcamComponent() {
             textAlign: 'left',
             width: '100%',
             fontFamily: 'Helvetica Neue, Arial, sans-serif',
-            fontSize: '14px',
-            letterSpacing: '2px',
+            fontSize: '12px',
+            letterSpacing: '1px',
+            lineHeight: '0.8',
             zIndex: 500,
-            padding: '20px',
+            padding: '10px',
             backgroundColor: 'rgba(0, 0, 0, 0.5)',
           }}
         >
-          <p>{`wait: ${flash}`}</p>
+          {/* <p>{`wait: ${flash}`}</p> */}
           <p>faceDetected: {faceDetected ? 'true' : 'false'}</p>
+          <p>{`age: ${age}`}</p>
+          <p>{`gender: ${gender}`}</p>
+          <p>{`genderScore: ${genderScore}`}</p>
+          <p>{`faceDistance: ${faceDistance}`}</p>
+          <p>{`faceScore: ${faceScore}`}</p>
           {!flash && (
             <>
               {/* <p>{`Number of faces detected: ${facesDetected}`}</p> */}
@@ -363,7 +382,7 @@ function WebcamComponent() {
           )}
           <p
             style={{
-              marginTop: '20px',
+              marginTop: '10px',
               lineHeight: '1',
               whiteSpace: 'pre-wrap',
             }}
