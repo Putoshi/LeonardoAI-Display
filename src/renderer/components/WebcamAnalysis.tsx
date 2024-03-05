@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useAtom } from 'jotai';
-import { Human, Config } from '@vladmandic/human';
+import { Human, Config, DrawOptions } from '@vladmandic/human';
 import InterpolatedFaceAtom from '../states/InterpolatedFaceAtom';
 
 const squareSize = 300; // 正方形のサイズを300pxに設定
@@ -20,6 +20,14 @@ const humanConfig: Partial<Config> = {
   hand: { enabled: false },
   object: { enabled: false },
   gesture: { enabled: true },
+};
+
+const drawConfig: Partial<DrawOptions> = {
+  alpha: 0.2,
+  drawLabels: false,
+  drawAttention: false,
+  drawBoxes: false,
+  drawGestures: false,
 };
 
 function WebcamAnalysis({
@@ -199,7 +207,7 @@ function WebcamAnalysis({
           }
 
           await human.draw.canvas(tempCanvas, canvasRef.current); // tempCanvasを使用
-          await human.draw.all(canvasRef.current, interpolated);
+          await human.draw.all(canvasRef.current, interpolated, drawConfig);
         }
       }
       setTimeout(drawLoop, 30);
