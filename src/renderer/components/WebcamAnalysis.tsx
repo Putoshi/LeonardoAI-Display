@@ -24,7 +24,7 @@ const humanConfig: Partial<Config> = {
 
 const drawConfig: Partial<DrawOptions> = {
   alpha: 0.2,
-  drawLabels: false,
+  // drawLabels: false,
   drawAttention: false,
   drawBoxes: false,
   drawGestures: false,
@@ -200,7 +200,7 @@ function WebcamAnalysis({
 
           // drawLoop関数内でinterpolated.face[0]を取得した後に状態を更新
           if (interpolated.face.length > 0) {
-            // console.log('interpolated', interpolated.face[0]);
+            console.log('interpolated', interpolated.face[0]);
             setInterpolatedFace(interpolated.face[0]);
           } else {
             setInterpolatedFace(null);
