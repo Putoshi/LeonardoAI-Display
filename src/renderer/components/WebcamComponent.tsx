@@ -86,6 +86,7 @@ function WebcamComponent() {
   const [genderScore, setGenderScore] = useState<number>(0);
   const [faceDistance, setfaceDistance] = useState<number>(0);
   const [faceScore, setfaceScore] = useState<number>(0);
+  const [emotion, setEmotion] = useState<object[]>([]);
 
   const [interpolatedFace] = useAtom(InterpolatedFaceAtom);
 
@@ -169,6 +170,7 @@ function WebcamComponent() {
       setGenderScore(interpolatedFace.genderScore);
       setfaceDistance(interpolatedFace.distance);
       setfaceScore(interpolatedFace.score);
+      setEmotion(interpolatedFace.emotion);
 
       setDetected(true);
       const facecenterX =
@@ -370,6 +372,14 @@ function WebcamComponent() {
           <p>{`genderScore: ${genderScore}`}</p>
           <p>{`faceDistance: ${faceDistance}`}</p>
           <p>{`faceScore: ${faceScore}`}</p>
+          <div>
+            emotion:
+            {emotion.map((em: any, index: number) => (
+              <p
+                key={index}
+              >{`　${em.emotion} --- ${Math.ceil(em.score * 100)}%`}</p>
+            ))}
+          </div>
           {!flash && (
             <>
               {/* <p>{`Number of faces detected: ${facesDetected}`}</p> */}
