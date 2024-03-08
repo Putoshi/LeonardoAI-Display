@@ -63,8 +63,8 @@ function ResultQR() {
     <div
       style={{
         position: 'absolute',
-        bottom: '2px',
-        right: '2px',
+        bottom: '8px',
+        right: '8px',
         zIndex: '1000',
         transform: 'scale(0.5)',
         transformOrigin: 'right bottom',
