@@ -1,11 +1,10 @@
 import React, { useRef, useEffect, useState } from 'react';
 import LeonardoAIOptions from '../../main/LeonardoAIOptions';
-
 require('@tensorflow/tfjs-backend-cpu');
 require('@tensorflow/tfjs-backend-webgl');
 const cocoSsd = require('@tensorflow-models/coco-ssd');
 
-const margin = 10;
+let margin = 10;
 
 /**
  * コンソール画面に表示する人間判定のコンポーネント
@@ -72,10 +71,19 @@ function HumanDetection() {
       },
     );
 
+    const removeConfigEveListener = window.electron.ipcRenderer.on(
+      'get-config-reply',
+      (e: any) => {
+        margin = e.margin;
+      },
+    );
+    window.electron.ipcRenderer.sendMessage('get-config');
+
     return () => {
       removeHumanCheckEveListener();
       removeGeneDoneEveListener();
       removeGeneStartEveListener();
+      removeConfigEveListener();
     };
   }, []);
 
