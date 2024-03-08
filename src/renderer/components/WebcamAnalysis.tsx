@@ -177,6 +177,8 @@ function WebcamAnalysis({
     };
 
     const drawLoop = async () => {
+      if (videoRef.current?.videoWidth === 0) return;
+
       if (videoRef.current && !videoRef.current.paused && canvasRef.current) {
         const tempCanvas = document.createElement('canvas');
         const tempCtx = tempCanvas.getContext('2d');
@@ -200,7 +202,7 @@ function WebcamAnalysis({
 
           // drawLoop関数内でinterpolated.face[0]を取得した後に状態を更新
           if (interpolated.face.length > 0) {
-            console.log('interpolated', interpolated.face[0]);
+            // console.log('interpolated', interpolated.face[0]);
             setInterpolatedFace(interpolated.face[0]);
           } else {
             setInterpolatedFace(null);
