@@ -36,6 +36,9 @@ const stateManager = StateManager.getInstance();
 /** WindowInstanceManagerクラスのインスタンス */
 const windowInstanceManager = WindowInstanceManager.getInstance();
 
+/** 設定ファイルのデフォルト値 */
+let config: any;
+
 /**
  * AppUpdaterクラス
  */
@@ -68,6 +71,12 @@ ipcMain.on('ipc-example', async (event, arg) => {
 
 ipcMain?.on('reload-app', () => {
   AppUtils.reloadApp();
+});
+
+ipcMain?.on('get-config', (event) => {
+  console.log('load-config');
+
+  event.reply('get-config-reply', config);
 });
 
 // AI画像の取得リクエスト
@@ -236,7 +245,7 @@ const createWindow = async () => {
  */
 const registerGlobalShortcuts = async () => {
   // 設定ファイルを読み込む
-  const config = await loadConfig();
+  config = await loadConfig();
   if (!config) {
     console.error('設定ファイルの読み込みに失敗しました');
     return;

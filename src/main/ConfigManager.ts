@@ -1,11 +1,12 @@
 import fs from 'fs';
-import { shell } from 'electron';
+import { app, globalShortcut, shell } from 'electron';
 import { getConfigPath } from './LocalPath';
 
 // 設定ファイルのデフォルト値を定数として定義
 const DEFAULT_CONFIG = {
   primaryDisplayIndex: 0,
   secondaryDisplayIndex: 1,
+  margin: 100,
 };
 
 // 設定ファイルのデフォルト値を設定する関数
@@ -31,3 +32,10 @@ export async function loadConfig() {
     return null;
   }
 }
+
+// 設定ファイルを開くショートカットの登録
+app.on('ready', () => {
+  globalShortcut.register('Option+O', () => {
+    shell.showItemInFolder(getConfigPath());
+  });
+});
