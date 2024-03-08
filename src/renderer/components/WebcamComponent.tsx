@@ -142,8 +142,8 @@ function WebcamComponent() {
         const timestamp = new Date().toLocaleString('ja-JP');
         const newLog = `${prevLog}\n${timestamp}  ${data.txt}`;
         const splitLog = newLog.split('\n');
-        if (splitLog.length > 10) {
-          return splitLog.slice(-10).join('\n');
+        if (splitLog.length > 8) {
+          return splitLog.slice(-8).join('\n');
         }
         return newLog;
       });
@@ -165,12 +165,12 @@ function WebcamComponent() {
     if (interpolatedFace) {
       // console.log(interpolatedFace);
 
-      setAge(interpolatedFace.age);
-      setGender(interpolatedFace.gender);
-      setGenderScore(interpolatedFace.genderScore);
-      setfaceDistance(interpolatedFace.distance);
-      setfaceScore(interpolatedFace.score);
-      setEmotion(interpolatedFace.emotion);
+      setAge(interpolatedFace.age); // 年齢を設定
+      setGender(interpolatedFace.gender); // 性別を設定
+      setGenderScore(interpolatedFace.genderScore); // 性別スコアを設定
+      setfaceDistance(interpolatedFace.distance); // 顔とカメラの距離を設定
+      setfaceScore(interpolatedFace.score); // 顔のスコアを設定
+      setEmotion(interpolatedFace.emotion); // 感情を設定
 
       setDetected(true);
       const facecenterX =
@@ -392,7 +392,7 @@ function WebcamComponent() {
           )}
           <p
             style={{
-              marginTop: '10px',
+              marginTop: '5px',
               lineHeight: '1',
               whiteSpace: 'pre-wrap',
             }}

@@ -63,6 +63,11 @@ a:hover {
   text-decoration: none;
 }
 
+p {
+  margin: 0;
+  line-height: 1.4;
+}
+
 .TopView {
   display: flex;
   justify-content: center;
