@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useAtom } from 'jotai';
-import axios from 'axios';
 import QRCode from 'qrcode.react';
 // import ResultImageAtom from '../states/ResultImageAtom';
 
