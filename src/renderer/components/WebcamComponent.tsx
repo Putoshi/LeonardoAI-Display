@@ -172,6 +172,12 @@ function WebcamComponent() {
       setfaceScore(interpolatedFace.score); // 顔のスコアを設定
       setEmotion(interpolatedFace.emotion); // 感情を設定
 
+      // メインスレッドの方に解析結果を渡す
+      window?.electron.ipcRenderer.sendMessage(
+        'get-analysis-data',
+        interpolatedFace,
+      );
+
       setDetected(true);
       const facecenterX =
         interpolatedFace.boxRaw[0] + interpolatedFace.boxRaw[2] * 0.5;

@@ -39,6 +39,8 @@ const windowInstanceManager = WindowInstanceManager.getInstance();
 /** 設定ファイルのデフォルト値 */
 let config: any;
 
+let interpolatedFace: any;
+
 /**
  * AppUpdaterクラス
  */
@@ -79,16 +81,22 @@ ipcMain?.on('get-config', (event) => {
   event.reply('get-config-reply', config);
 });
 
+// AI画像の解析結果の取得
+ipcMain.on('get-analysis-data', async (event, _interpolatedFace) => {
+  interpolatedFace = _interpolatedFace;
+  // console.log(interpolatedFace);
+});
+
 // AI画像の取得リクエスト
 ipcMain.on('get-aiimage', async () => {
-  Generate.start();
+  Generate.start(interpolatedFace);
   // event.reply('get-aiimage-reply', 'Image fetch initiated');
 });
 
 // AI画像の取得リクエスト リトライ
 ipcMain.on('get-aiimage-retry', async () => {
   stateManager.generating = false;
-  Generate.start();
+  Generate.start(interpolatedFace);
   windowInstanceManager.subWindow?.webContents.send('log', {
     txt: 'Retry Generating...',
   });
@@ -110,7 +118,7 @@ ipcMain.on('save-screenshot', (event, data) => {
   stateManager.faceImageURL = defaultPath;
   console.log('faceImageURL', stateManager.faceImageURL);
 
-  Generate.start();
+  Generate.start(interpolatedFace);
   // const filePath = dialog.showSaveDialogSync({
   //   buttonLabel: 'Save image',
   //   defaultPath,

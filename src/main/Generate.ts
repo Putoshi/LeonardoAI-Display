@@ -28,7 +28,7 @@ const windowInstanceManager = WindowInstanceManager.getInstance();
  * AI画像生成開始
  * @returns
  */
-const start = async () => {
+const start = async (interpolatedFace: any) => {
   if (stateManager.generating) {
     console.log('既に生成中です。');
     return;
@@ -43,7 +43,8 @@ const start = async () => {
 
   let outputFolder = '';
   try {
-    outputFolder = await aiImageFetcher.getAIImageRequest();
+    outputFolder = await aiImageFetcher.getAIImageRequest(interpolatedFace);
+
     console.log('outputFolder', outputFolder);
   } catch (error) {
     console.error('AI画像取得リクエストでエラーが発生しました:', error);

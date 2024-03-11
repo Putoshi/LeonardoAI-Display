@@ -3,7 +3,7 @@ import path from 'path';
 // import { v4 as uuidv4 } from 'uuid';
 import ImageSaver from './ImageSaver';
 import LeonardoAIOptions from './LeonardoAIOptions';
-import LeonardoAIPrompts from './LeonardoAIPrompts';
+import { editPrompt } from './LeonardoAIPrompts';
 import { getTmpFolderPath } from './LocalPath';
 
 /** 環境設定をロード */
@@ -103,7 +103,9 @@ export default class AIImageFetcher {
    * AI画像を取得するリクエストを送信
    * @returns
    */
-  async getAIImageRequest(): Promise<string> {
+  async getAIImageRequest(interpolatedFace: any): Promise<string> {
+    const promptOptions = editPrompt(interpolatedFace); // AI画像生成のためのプロンプトを編集
+
     const options = {
       method: 'POST',
       headers: {
@@ -111,7 +113,10 @@ export default class AIImageFetcher {
         'content-type': 'application/json',
         authorization: `Bearer ${this.environmentConfig.LEONARDAI_API_KEY}`,
       },
-      body: JSON.stringify({ ...LeonardoAIOptions, ...LeonardoAIPrompts }),
+      body: JSON.stringify({
+        ...LeonardoAIOptions,
+        ...promptOptions,
+      }),
     };
 
     try {
