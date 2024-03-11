@@ -31,12 +31,12 @@ export const editPrompt: (interpolatedFace: any) => any = (
   if (interpolatedFace.gender === 'male') {
     newPrompts.prompt = prompts.prompt.replace(
       '$1',
-      `The man around ${interpolatedFace.age + correctionAge} years old`,
+      `The man around ${Math.floor(interpolatedFace.age) + correctionAge} years old`,
     );
   } else {
     newPrompts.prompt = prompts.prompt.replace(
       '$1',
-      `The woman around ${interpolatedFace.age + correctionAge} years old`,
+      `The woman around ${Math.floor(interpolatedFace.age) + correctionAge} years old`,
     );
   }
   console.log('newPrompts.prompt', newPrompts.prompt);
