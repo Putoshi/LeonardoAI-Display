@@ -11,7 +11,17 @@ let margin = 10;
  * @returns
  */
 function HumanDetection() {
-  const [imageSrcs, setImageSrcs] = useState<string[]>(['', '', '', '']);
+  const [imageSrcs, setImageSrcs] = useState<string[]>([
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+  ]);
   const imgRefs = useRef([]);
 
   const [personDetected, setPersonDetected] = useState<boolean>(false);
@@ -20,7 +30,17 @@ function HumanDetection() {
   const [personChecking, setPersonChecking] = useState<boolean>(false);
   const [srcImgPath, setSrcImgPath] = useState<string>('');
   // boundingBoxを配列の配列に変更
-  const [boundingBoxes, setBoundingBoxes] = useState([[], [], [], []]);
+  const [boundingBoxes, setBoundingBoxes] = useState([
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+  ]);
 
   const [humanBBoxes, setHumanBBoxes] = useState<number[][]>();
 
@@ -43,7 +63,7 @@ function HumanDetection() {
         setImageSrcs(data.dataUrls as string[]);
 
         // boundingBoxesの初期化
-        setBoundingBoxes([[], [], [], []]);
+        setBoundingBoxes([[], [], [], [], [], [], [], [], []]);
 
         // humanBBoxesの初期化
         setHumanBBoxes([]);
@@ -97,6 +117,7 @@ function HumanDetection() {
 
           console.log('humanBBoxes', humanBBoxes);
           const scale = LeonardoAIOptions.width / window.innerWidth;
+
           window.electron.ipcRenderer.sendMessage('human-detected', {
             srcImgPath,
             humanBBox: [
@@ -266,7 +287,8 @@ function HumanDetection() {
             }}
           />
         )}
-        {[...Array(4)].map((_, index) => (
+
+        {imageSrcs.map((src, index) => (
           <div
             key={index}
             id={`part${index + 1}`}
@@ -274,15 +296,13 @@ function HumanDetection() {
               position: 'absolute',
               marginLeft: '0',
               marginRight: '0',
-              right: '0',
-              top: '0',
+              left: `${index % 3 === 2 ? 'calc(66.66% - 10%)' : index % 3 === 1 ? 'calc(33.33% - 5%)' : '0'}`,
+              top: `${index >= 6 ? 'calc(66.66% - 10%)' : index >= 3 ? 'calc(33.33% - 5%)' : '0'}`,
               textAlign: 'center',
               zIndex: 0,
-              width: '100%',
-              height: '100%',
+              width: 'calc(33.33% + 10%)',
+              height: 'calc(33.33% + 10%)',
               objectFit: 'fill',
-              transform: `scale(0.65, 0.65)`,
-              transformOrigin: `${index % 2 === 0 ? '0' : '100%'} ${index < 2 ? '0' : '100%'}`,
             }}
           >
             <img
@@ -302,7 +322,7 @@ function HumanDetection() {
                 height: '100%',
                 objectFit: 'fill',
               }}
-              src={imageSrcs[index]}
+              src={src}
             />
           </div>
         ))}

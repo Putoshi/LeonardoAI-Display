@@ -55,19 +55,28 @@ const start = async (interpolatedFace: any) => {
   }
 
   /**
-   * 画像を4分割して保存
+   * 画像を9分割して保存
    * @param _srcPath 元画像のパス
    * @param _outputPath 保存先のパス
    */
   const sliceImgPartical = async (_srcPath: string, _outputPath: string) => {
     const image = await require('sharp')(_srcPath).metadata();
-    const width = image.width * 0.65; // 横幅の65%
-    const height = image.height * 0.65; // 縦幅の65%
+    const thirdWidth = Math.floor(image.width * 0.3333); // 横幅の1/3を整数に
+    const thirdHeight = Math.floor(image.height * 0.3333); // 縦幅の1/3を整数に
+
+    const marginW = Math.floor(image.width * 0.1);
+    const marginH = Math.floor(image.height * 0.1);
+
     const positions = [
       { top: 0, left: 0 }, // 左上
-      { top: 0, left: image.width - width }, // 右上
-      { top: image.height - height, left: 0 }, // 左下
-      { top: image.height - height, left: image.width - width }, // 右下
+      { top: 0, left: thirdWidth - marginW / 2 }, // 上中央
+      { top: 0, left: 2 * thirdWidth - marginW }, // 右上
+      { top: thirdHeight - marginH / 2, left: 0 }, // 中央左
+      { top: thirdHeight - marginH / 2, left: thirdWidth - marginW / 2 }, // 中央
+      { top: thirdHeight - marginH / 2, left: 2 * thirdWidth - marginW }, // 中央右
+      { top: 2 * thirdHeight - marginH, left: 0 }, // 左下
+      { top: 2 * thirdHeight - marginH, left: thirdWidth - marginW / 2 }, // 下中央
+      { top: 2 * thirdHeight - marginH, left: 2 * thirdWidth - marginW }, // 右下
     ];
 
     await Promise.all(
@@ -81,8 +90,8 @@ const start = async (interpolatedFace: any) => {
           outputPathModified,
           pos.top,
           pos.left,
-          width,
-          height,
+          thirdWidth + marginW,
+          thirdHeight + marginH,
         );
       }),
     );
@@ -121,7 +130,7 @@ const performHumanDetection = async (imagePath: string) => {
   /** 判定用に分割した画像のパスを格納する配列 */
   const imagePathsModified = [];
 
-  for (let i = 0; i < 4; ++i) {
+  for (let i = 0; i < 9; ++i) {
     imagePathsModified.push(imagePath.replace('.jpg', `_${i + 1}.jpg`));
     // console.log(`人間判定を実行: ${imagePathsModified[i]}`);
   }
