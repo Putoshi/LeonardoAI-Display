@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useAtom } from 'jotai';
 import { Human, Config, DrawOptions } from '@vladmandic/human';
 import InterpolatedFaceAtom from '../states/InterpolatedFaceAtom';
