@@ -1,46 +1,17 @@
-import { useRef, useEffect, useState } from 'react';
-import { Human, Config, DrawOptions } from '@vladmandic/human';
+import React, { useRef, useEffect, useState } from 'react';
 import LeonardoAIOptions from '../../main/LeonardoAIOptions';
-
 require('@tensorflow/tfjs-backend-cpu');
 require('@tensorflow/tfjs-backend-webgl');
 const cocoSsd = require('@tensorflow-models/coco-ssd');
 
-let margin = 10;
-
-const config: Partial<Config> = {
-  backend: 'webgl',
-  async: true,
-  face: {
-    enabled: true, // 顔検出を有効にする
-  },
-  body: {
-    enabled: true, // 体の検出を有効にする
-  },
-  hand: {
-    enabled: false, // 手の検出を無効にする
-  },
-};
-const human = new Human(config);
-
-const scale = LeonardoAIOptions.width / window.innerWidth;
+let margin = 100;
 
 /**
  * コンソール画面に表示する人間判定のコンポーネント
  * @returns
  */
 function HumanDetection() {
-  const [imageSrcs, setImageSrcs] = useState<string[]>([
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-  ]);
+  const [imageSrcs, setImageSrcs] = useState<string[]>(['', '', '', '']);
   const imgRefs = useRef([]);
 
   const [personDetected, setPersonDetected] = useState<boolean>(false);
@@ -49,17 +20,7 @@ function HumanDetection() {
   const [personChecking, setPersonChecking] = useState<boolean>(false);
   const [srcImgPath, setSrcImgPath] = useState<string>('');
   // boundingBoxを配列の配列に変更
-  const [boundingBoxes, setBoundingBoxes] = useState([
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-  ]);
+  const [boundingBoxes, setBoundingBoxes] = useState([[], [], [], []]);
 
   const [humanBBoxes, setHumanBBoxes] = useState<number[][]>();
 
@@ -82,7 +43,7 @@ function HumanDetection() {
         setImageSrcs(data.dataUrls as string[]);
 
         // boundingBoxesの初期化
-        setBoundingBoxes([[], [], [], [], [], [], [], [], []]);
+        setBoundingBoxes([[], [], [], []]);
 
         // humanBBoxesの初期化
         setHumanBBoxes([]);
@@ -135,17 +96,16 @@ function HumanDetection() {
           console.log('人間が検出されました');
 
           console.log('humanBBoxes', humanBBoxes);
-          // const scale = LeonardoAIOptions.width / window.innerWidth;
-
-          // window.electron.ipcRenderer.sendMessage('human-detected', {
-          //   srcImgPath,
-          //   humanBBox: [
-          //     Math.floor(humanBBoxes[0][0] * scale),
-          //     Math.floor(humanBBoxes[0][1] * scale),
-          //     Math.floor(humanBBoxes[0][2] * scale),
-          //     Math.floor(humanBBoxes[0][3] * scale),
-          //   ],
-          // });
+          const scale = LeonardoAIOptions.width / window.innerWidth;
+          window.electron.ipcRenderer.sendMessage('human-detected', {
+            srcImgPath,
+            humanBBox: [
+              Math.floor(humanBBoxes[0][0] * scale),
+              Math.floor(humanBBoxes[0][1] * scale),
+              Math.floor(humanBBoxes[0][2] * scale),
+              Math.floor(humanBBoxes[0][3] * scale),
+            ],
+          });
         } else {
           console.log('人間が検出されませんでした');
           window.electron.ipcRenderer.sendMessage('get-aiimage-retry');
@@ -176,108 +136,79 @@ function HumanDetection() {
   };
 
   // 画像を変更する関数（例えば、ボタンクリックで呼び出す）
-  const onImageLoaded = async (index: number) => {
+  const onImageLoaded = (index: number) => {
     const img = imgRefs.current[index];
     if (img) {
-      try {
-        const result = await human.detect(img);
+      cocoSsd
+        .load()
+        .then((model: any) => {
+          return model.detect(img);
+        })
+        .then((predictions: any) => {
+          console.log('Predictions: ', predictions);
 
-        // 顔検出の結果をフィルタリング
-        const facePredictions = result.face.filter(
-          (prediction) => prediction.faceScore > 0.8,
-        );
-
-        console.log(`${index} facePredictions: `, facePredictions);
-
-        if (facePredictions.length > 0 && !personDetected) {
-          setPersonDetected(true);
-
-          // 顔検出結果に基づいてバウンディングボックスを処理
-          const modifiedBBoxes = facePredictions.map((prediction) => {
-            const { box } = prediction;
-            // const scale = 0.65; // 縮小率
-            // console.log('scale', scale);
-
-            const modifiedWidth = box[2];
-            const modifiedHeight = box[3];
-            // indexに基づいて座標を調整
-            const offsetX =
-              index % 3 === 2
-                ? window.innerWidth * (0.6666 - 0.1)
-                : index % 3 === 1
-                  ? window.innerWidth * (0.3333 - 0.05)
-                  : index % 3 === 0
-                    ? 0
-                    : 0;
-            const offsetY =
-              index >= 6
-                ? window.innerHeight * (0.6666 - 0.1)
-                : index >= 3
-                  ? window.innerHeight * (0.3333 - 0.05)
-                  : 0;
-
-            // const offsetX =
-            //   index % 2 === 0 ? 0 : window.innerWidth * (1 - scale);
-            // const offsetY = index < 2 ? 0 : window.innerHeight * (1 - scale);
-            // console.log(index);
-            console.log([
-              box[0] + offsetX * scale,
-              box[1] + offsetY * scale,
-              modifiedWidth,
-              modifiedHeight,
-            ]);
-
-            const modifiedX = box[0] / scale + offsetX;
-            const modifiedY = box[1] / scale + offsetY;
-
-            // console.log([
-            //   modifiedX,
-            //   modifiedY,
-            //   modifiedWidth / scale,
-            //   modifiedHeight / scale,
-            // ]);
-            // console.log([
-            //   Math.floor(modifiedX - margin / scale),
-            //   Math.floor(modifiedY - margin / scale),
-            //   Math.floor(modifiedWidth + (margin * 2) / scale),
-            //   Math.floor(modifiedHeight + (margin * 2) / scale),
-            // ]);
-            // return [
-            //   Math.floor(modifiedX - margin / scale),
-            //   Math.floor(modifiedY - margin / scale),
-            //   Math.floor(modifiedWidth + (margin * 2) / scale),
-            //   Math.floor(modifiedHeight + (margin * 2) / scale),
-            // ];
-            return [
-              Math.floor(modifiedX),
-              Math.floor(modifiedY),
-              Math.floor(modifiedWidth / scale),
-              Math.floor(modifiedHeight / scale),
-            ];
-          });
-
-          console.log(modifiedBBoxes);
-
-          // modifiedBBoxesの計算後に呼び出し
-          const adjustedBBoxes = adjustBBoxesToImageBounds(modifiedBBoxes);
-
-          // バウンディングボックスを面積で降順に並び替え
-          const sortedBBoxes = [...humanBBoxes, ...adjustedBBoxes].sort(
-            (a, b) => {
-              const areaA = (a[2] - a[0]) * (a[3] - a[1]); // aの面積 = 幅 * 高さ
-              const areaB = (b[2] - b[0]) * (b[3] - b[1]); // bの面積 = 幅 * 高さ
-              return areaB - areaA; // 降順に並び替え
-            },
+          // classが'person'のpredictionsのみをフィルタリング
+          const personPredictions = predictions.filter(
+            (prediction: any) => prediction.class === 'person',
           );
 
-          setHumanBBoxes(sortedBBoxes);
-        }
+          // console.log('personPredictions: ', personPredictions);
 
-        // 画像の判定が終わったらチェックフラグをfalseにする
-        // if (index === imageSrcs.length - 1) setPersonChecking(false);
-      } catch (error) {
-        console.error('Error:', error);
-      }
+          if (personPredictions.length > 0 && !personDetected) {
+            setPersonDetected(true);
+
+            // バウンディングボックスの座標を4分割した座標系に直す
+            const modifiedBBoxes = personPredictions.map((p: any) => {
+              const [x, y, width, height] = p.bbox;
+              const scale = 0.65; // 縮小率
+              const modifiedWidth = width * scale;
+              const modifiedHeight = height * scale;
+              // indexに基づいて座標を調整
+              const offsetX =
+                index % 2 === 0 ? 0 : window.innerWidth * (1 - scale);
+              const offsetY = index < 2 ? 0 : window.innerHeight * (1 - scale);
+              const modifiedX = x * scale + offsetX;
+              const modifiedY = y * scale + offsetY;
+              return [
+                Math.floor(modifiedX - margin),
+                Math.floor(modifiedY - margin - 150),
+                Math.floor(modifiedWidth + margin * 2),
+                Math.floor(modifiedHeight + margin * 2),
+              ];
+            });
+
+            console.log(modifiedBBoxes);
+
+            // modifiedBBoxesの計算後に呼び出し
+            const adjustedBBoxes = adjustBBoxesToImageBounds(modifiedBBoxes);
+
+            // バウンディングボックスを面積で降順に並び替え
+            const sortedBBoxes = [...humanBBoxes, ...adjustedBBoxes].sort(
+              (a: number[], b: number[]) => {
+                const areaA = (a[2] - a[0]) * (a[3] - a[1]); // aの面積 = 幅 * 高さ
+                const areaB = (b[2] - b[0]) * (b[3] - b[1]); // bの面積 = 幅 * 高さ
+                return areaB - areaA; // 降順に並び替え
+              },
+            );
+
+            setHumanBBoxes(sortedBBoxes);
+          }
+
+          // boundingBoxesの更新処理を変更して、'person'のみを含む配列を使用
+          setBoundingBoxes((prevBoundingBoxes) =>
+            prevBoundingBoxes.map((box, i) =>
+              i === index ? personPredictions : box,
+            ),
+          );
+
+          // 画像の判定が終わったらチェックフラグをfalseにする
+          if (index === 3) setPersonChecking(false);
+
+          return predictions;
+        })
+        .catch((error: any) => {
+          console.error('Error:', error);
+        });
     }
   };
 
@@ -335,8 +266,7 @@ function HumanDetection() {
             }}
           />
         )}
-
-        {imageSrcs.map((src, index) => (
+        {[...Array(4)].map((_, index) => (
           <div
             key={index}
             id={`part${index + 1}`}
@@ -344,13 +274,15 @@ function HumanDetection() {
               position: 'absolute',
               marginLeft: '0',
               marginRight: '0',
-              left: `${index % 3 === 2 ? 'calc(66.66% - 10%)' : index % 3 === 1 ? 'calc(33.33% - 5%)' : '0'}`,
-              top: `${index >= 6 ? 'calc(66.66% - 10%)' : index >= 3 ? 'calc(33.33% - 5%)' : '0'}`,
+              right: '0',
+              top: '0',
               textAlign: 'center',
               zIndex: 0,
-              width: 'calc(33.33% + 10%)',
-              height: 'calc(33.33% + 10%)',
+              width: '100%',
+              height: '100%',
               objectFit: 'fill',
+              transform: `scale(0.65, 0.65)`,
+              transformOrigin: `${index % 2 === 0 ? '0' : '100%'} ${index < 2 ? '0' : '100%'}`,
             }}
           >
             <img
@@ -370,7 +302,7 @@ function HumanDetection() {
                 height: '100%',
                 objectFit: 'fill',
               }}
-              src={src}
+              src={imageSrcs[index]}
             />
           </div>
         ))}
