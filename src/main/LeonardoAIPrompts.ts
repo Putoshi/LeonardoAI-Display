@@ -5,7 +5,8 @@
 
 /** プロンプト */
 const prompt: string =
-  'The portrait depicts multiple figures and a heroic and graceful animal such as a hawk, bear, polar bear, chipmunk, pig, tiger, wolf, deer, cat, antelope, or rabbit in the same space in a realistic manner. The figures are side by side, as in a commemorative photograph, with a (($1)) seated in the center. The figures are all smiling and dressed in medieval European attire. The animals are present representing each type of animal, so there are no animals of more than one similar type.The portraits were painted to commemorate some event, and the atmosphere of the event is evident in the background. This enchanting portrait captivates viewers with its exquisite precision and awe-inspiring artistry, immersing them in the compelling story from Middle-earth. At least one human (male) is always in the portrait, and sometimes more than one person is in the portrait.  (((Portraits))) , high detail, high quality, high resolution, dramatically captivatin';
+  'Imagine a Art Nouveau box label for Fine Coffee with a $1 smile faintly';
+// 'Imagine an Art Nouveau vintage novel cover designed by Alphonse Mucha with one $1';
 // '$1 lives in Middle-earth.The portrait depicts ((one figures)) and a heroic and graceful multiple animals such as a hawk, bear, polar bear, chipmunk, pig, tiger, wolf, deer, cat, antelope, or rabbit in the same space in a realistic manner. Each type of animal depicted is one animal. The figures are side by side, as in a commemorative photograph, with a single human seated in the center. The figures are all smiling and dressed in medieval European attire. The animals are present representing each type of animal, so there are no animals of more than one similar type.The portraits were painted to commemorate some event, and the atmosphere of the event is evident in the background. This enchanting portrait captivates viewers with its exquisite precision and awe-inspiring artistry, immersing them in the compelling story from Middle-earth.  (((Portraits))) , high detail, high quality, high resolution, dramatically captivating';
 
 /** ネガティブプロンプト */
@@ -31,20 +32,28 @@ export const editPrompt: (interpolatedFace: any) => any = (
   // if (interpolatedFace.gender === 'male') {
   //   newPrompts.prompt = prompts.prompt.replace(
   //     '$1',
-  //     `The man around ${Math.floor(interpolatedFace.age) + correctionAge} years old`,
+  //     `man around ${Math.floor(interpolatedFace.age) + correctionAge} years old`,
   //   );
+  //   newPrompts.negative_prompt = prompts.negative_prompt.replace('$1', `woman`);
   // } else {
   //   newPrompts.prompt = prompts.prompt.replace(
   //     '$1',
-  //     `The woman around ${Math.floor(interpolatedFace.age) + correctionAge} years old`,
+  //     `woman around ${Math.floor(interpolatedFace.age) + correctionAge} years old`,
   //   );
+  //   newPrompts.negative_prompt = prompts.negative_prompt.replace('$1', `man`);
   // }
 
   if (interpolatedFace.gender === 'male') {
-    newPrompts.prompt = prompts.prompt.replace('$1', `man`);
-    newPrompts.negative_prompt = prompts.negative_prompt.replace('$1', `woman`);
+    newPrompts.prompt = prompts.prompt.replace('$1', `Drew Barrymore`);
+    newPrompts.negative_prompt = prompts.negative_prompt.replace('$1', `man`);
   } else {
-    newPrompts.prompt = prompts.prompt.replace('$1', `woman`);
+    newPrompts.prompt = prompts.prompt.replace('$1', `Young Bernadette Peters`);
+    //  Young Bernadette Peters(バーナデット・ピーターズ)
+    //  Cate Blanchett (ケイト・ブランシェット)
+    //  Meg Ryan
+    // Drew Barrymore (ドリュー・バリモア)
+    //  Audrey Hepburn (オードリー・ヘップバーン)
+
     newPrompts.negative_prompt = prompts.negative_prompt.replace('$1', `man`);
   }
   console.log('newPrompts.prompt', newPrompts.prompt);
