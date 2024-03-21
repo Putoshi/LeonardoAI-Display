@@ -21,12 +21,21 @@ const prompts = {
 /** 顔解析結果によって年齢を補正する値 */
 const correctionAge = 3;
 
+const promptAry = [
+  'Young Bernadette Peters',
+  'Cate Blanchett',
+  'Meg Ryan',
+  'Drew Barrymore',
+  // 'Audrey Hepburn',
+];
+
 /** プロンプトを顔解析結果によって編集して返却する関数 */
-export const editPrompt: (interpolatedFace: any) => any = (
+export const editPrompt: (interpolatedFace: any, idx: number) => any = (
   interpolatedFace: any,
+  idx: number,
 ) => {
   const newPrompts = structuredClone(prompts);
-  console.log(interpolatedFace);
+  // console.log(interpolatedFace);
 
   // ここでプロンプトを編集
   // if (interpolatedFace.gender === 'male') {
@@ -43,11 +52,14 @@ export const editPrompt: (interpolatedFace: any) => any = (
   //   newPrompts.negative_prompt = prompts.negative_prompt.replace('$1', `man`);
   // }
 
+  console.log('idx', idx);
+
   if (interpolatedFace.gender === 'male') {
-    newPrompts.prompt = prompts.prompt.replace('$1', `Drew Barrymore`);
+    newPrompts.prompt = prompts.prompt.replace('$1', promptAry[idx]);
+    // newPrompts.prompt = prompts.prompt.replace('$1', `Young Bernadette Peters`);
     newPrompts.negative_prompt = prompts.negative_prompt.replace('$1', `man`);
   } else {
-    newPrompts.prompt = prompts.prompt.replace('$1', `Young Bernadette Peters`);
+    newPrompts.prompt = prompts.prompt.replace('$1', promptAry[idx]);
     //  Young Bernadette Peters(バーナデット・ピーターズ)
     //  Cate Blanchett (ケイト・ブランシェット)
     //  Meg Ryan
