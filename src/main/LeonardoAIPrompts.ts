@@ -6,7 +6,7 @@
 /** プロンプト */
 const prompt: string =
   'Imagine a Art Nouveau box label for Fine Coffee with a $1 smile faintly';
-// 'Imagine an Art Nouveau vintage novel cover designed by Alphonse Mucha with one $1';
+// 'Imagine an Art Nouveau vintage novel cover designed by Alphonse Mucha with one $1';アールヌーボー
 // '$1 lives in Middle-earth.The portrait depicts ((one figures)) and a heroic and graceful multiple animals such as a hawk, bear, polar bear, chipmunk, pig, tiger, wolf, deer, cat, antelope, or rabbit in the same space in a realistic manner. Each type of animal depicted is one animal. The figures are side by side, as in a commemorative photograph, with a single human seated in the center. The figures are all smiling and dressed in medieval European attire. The animals are present representing each type of animal, so there are no animals of more than one similar type.The portraits were painted to commemorate some event, and the atmosphere of the event is evident in the background. This enchanting portrait captivates viewers with its exquisite precision and awe-inspiring artistry, immersing them in the compelling story from Middle-earth.  (((Portraits))) , high detail, high quality, high resolution, dramatically captivating';
 
 /** ネガティブプロンプト */
@@ -21,12 +21,26 @@ const prompts = {
 /** 顔解析結果によって年齢を補正する値 */
 const correctionAge = 3;
 
-const promptAry = [
+const maleList = [
+  'Orlando Bloom',
+  'Charlie Hunnam',
+  'Brad Pitt',
+  'George Clooney',
+  'Tom Cruise',
+  'Leonardo DiCaprio',
+  'Johnny Depp',
+  'Hugh Jackman',
+  // 'Audrey Hepburn',アールヌーボー
+];
+
+const femaleList = [
   'Young Bernadette Peters',
   'Cate Blanchett',
   'Meg Ryan',
   'Drew Barrymore',
-  // 'Audrey Hepburn',
+  'Zendaya',
+  'Lili Reinhart',
+  // 'Audrey Hepburn',アールヌーボー
 ];
 
 /** プロンプトを顔解析結果によって編集して返却する関数 */
@@ -55,11 +69,11 @@ export const editPrompt: (interpolatedFace: any, idx: number) => any = (
   console.log('idx', idx);
 
   if (interpolatedFace.gender === 'male') {
-    newPrompts.prompt = prompts.prompt.replace('$1', promptAry[idx]);
+    newPrompts.prompt = prompts.prompt.replace('$1', maleList[idx]);
     // newPrompts.prompt = prompts.prompt.replace('$1', `Young Bernadette Peters`);
-    newPrompts.negative_prompt = prompts.negative_prompt.replace('$1', `man`);
+    newPrompts.negative_prompt = prompts.negative_prompt.replace('$1', `woman`);
   } else {
-    newPrompts.prompt = prompts.prompt.replace('$1', promptAry[idx]);
+    newPrompts.prompt = prompts.prompt.replace('$1', femaleList[idx]);
     //  Young Bernadette Peters(バーナデット・ピーターズ)
     //  Cate Blanchett (ケイト・ブランシェット)
     //  Meg Ryan
