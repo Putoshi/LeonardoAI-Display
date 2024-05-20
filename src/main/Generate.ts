@@ -242,7 +242,7 @@ ipcMain.on('human-detected', async (event, data) => {
         input_face_image:
           stateManager.faceImageURL ??
           path.join(getTmpFolderPath(), 'harry.jpg'),
-        output_face_image: humanImgPath,
+        output_face_image: data.srcImgPath, // humanImgPath  ここで無理やり元画像を指定している
       },
       data.srcImgPath.replace('.jpg', '__swap.jpg'),
     );
@@ -262,12 +262,19 @@ ipcMain.on('human-detected', async (event, data) => {
   });
 
   // Swapした画像をリサイズして、元画像に合成する
-  await compositeImg(
-    data.srcImgPath,
+  // await compositeImg(
+  //   data.srcImgPath,
+  //   data.srcImgPath.replace('.jpg', '__swap.jpg'),
+  //   data.humanBBox,
+  //   data.srcImgPath.replace('.jpg', '__output.jpg'),
+  // );
+
+  // ここで無理やり元画像を指定している
+  fs.copyFileSync(
     data.srcImgPath.replace('.jpg', '__swap.jpg'),
-    data.humanBBox,
     data.srcImgPath.replace('.jpg', '__output.jpg'),
   );
+
   console.log('composite image done');
 
   // 合成した画像をメインウィンドウに送信

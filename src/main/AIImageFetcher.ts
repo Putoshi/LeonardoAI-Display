@@ -14,6 +14,8 @@ interface EnvironmentConfig {
   LEONARDAI_API_URL: string;
 }
 
+let idx = 0;
+
 /**
  * LeonardoAIで画像を生成するクラス
  */
@@ -104,7 +106,9 @@ export default class AIImageFetcher {
    * @returns
    */
   async getAIImageRequest(interpolatedFace: any): Promise<string> {
-    const promptOptions = editPrompt(interpolatedFace); // AI画像生成のためのプロンプトを編集
+    console.log('idx', idx);
+    const promptOptions = editPrompt(interpolatedFace, idx); // AI画像生成のためのプロンプトを編集
+    idx = (idx + 1) % 4;
 
     const options = {
       method: 'POST',
