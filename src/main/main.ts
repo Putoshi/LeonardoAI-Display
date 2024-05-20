@@ -195,8 +195,8 @@ const createWindow = async () => {
     // show: false,
     width: 1080 / 2,
     height: 1920 / 2,
-    x: getDisplayInfo()[0].bounds.x + 50, // サブディスプレイのX座標 + 50
-    y: getDisplayInfo()[0].bounds.y + 2500, // サブディスプレイのY座標 + 50
+    x: getDisplayInfo()[1].bounds.x, // サブディスプレイのX座標 + 50
+    y: getDisplayInfo()[1].bounds.y + 2500, // サブディスプレイのY座標 + 50
     icon: getAssetPath('icon.png'),
     webPreferences: {
       // nodeIntegration: true,

@@ -233,7 +233,7 @@ function WebcamAnalysis({
   return (
     <div>
       <video ref={videoRef} style={{ display: 'none' }} />
-      <canvas ref={canvasRef} />
+      <canvas style={{ width: '100%' }} ref={canvasRef} />
       <div>Status: {status}</div>
       <pre>{log.join('\n')}</pre>
     </div>

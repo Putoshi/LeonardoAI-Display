@@ -64,7 +64,7 @@ function ResultQR() {
         bottom: '8px',
         right: '8px',
         zIndex: '1000',
-        transform: 'scale(0.5)',
+        transform: 'scale(1.2)',
         transformOrigin: 'right bottom',
       }}
     >
