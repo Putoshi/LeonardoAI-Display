@@ -21,17 +21,17 @@ const prompts = {
 /** 顔解析結果によって年齢を補正する値 */
 const correctionAge = 3;
 
-const maleList = [
-  'Orlando Bloom',
-  'Charlie Hunnam',
-  'Brad Pitt',
-  'George Clooney',
-  'Tom Cruise',
-  'Leonardo DiCaprio',
-  'Johnny Depp',
-  'Hugh Jackman',
-  // 'Audrey Hepburn',アールヌーボー
-];
+// const maleList = [
+//   'Orlando Bloom',
+//   'Charlie Hunnam',
+//   'Brad Pitt',
+//   'George Clooney',
+//   'Tom Cruise',
+//   'Leonardo DiCaprio',
+//   'Johnny Depp',
+//   'Hugh Jackman',
+//   // 'Audrey Hepburn',アールヌーボー
+// ];
 
 const femaleList = [
   'Young Bernadette Peters',
@@ -40,6 +40,7 @@ const femaleList = [
   'Drew Barrymore',
   'Zendaya',
   'Lili Reinhart',
+  'Kate Moss',
   // 'Audrey Hepburn',アールヌーボー
 ];
 
@@ -68,20 +69,32 @@ export const editPrompt: (interpolatedFace: any, idx: number) => any = (
 
   console.log('idx', idx);
 
-  if (interpolatedFace.gender === 'male') {
-    newPrompts.prompt = prompts.prompt.replace('$1', maleList[idx]);
-    // newPrompts.prompt = prompts.prompt.replace('$1', `Young Bernadette Peters`);
-    newPrompts.negative_prompt = prompts.negative_prompt.replace('$1', `woman`);
-  } else {
-    newPrompts.prompt = prompts.prompt.replace('$1', femaleList[idx]);
-    //  Young Bernadette Peters(バーナデット・ピーターズ)
-    //  Cate Blanchett (ケイト・ブランシェット)
-    //  Meg Ryan
-    // Drew Barrymore (ドリュー・バリモア)
-    //  Audrey Hepburn (オードリー・ヘップバーン)
+  // newPrompts.prompt = prompts.prompt.replace('$1', femaleList[idx]);
+  newPrompts.prompt = prompts.prompt.replace('$1', 'Nicole Kidman');
 
-    newPrompts.negative_prompt = prompts.negative_prompt.replace('$1', `man`);
-  }
+  //  Young Bernadette Peters(バーナデット・ピーターズ)
+  //  Cate Blanchett (ケイト・ブランシェット)
+  //  Meg Ryan
+  // Drew Barrymore (ドリュー・バリモア)
+  //  Audrey Hepburn (オードリー・ヘップバーン)
+  // Kate Moss (ケイト・モス)
+
+  newPrompts.negative_prompt = prompts.negative_prompt.replace('$1', `man`);
+
+  // if (interpolatedFace.gender === 'male') {
+  //   newPrompts.prompt = prompts.prompt.replace('$1', maleList[idx]);
+  //   // newPrompts.prompt = prompts.prompt.replace('$1', `Young Bernadette Peters`);
+  //   newPrompts.negative_prompt = prompts.negative_prompt.replace('$1', `woman`);
+  // } else {
+  //   newPrompts.prompt = prompts.prompt.replace('$1', femaleList[idx]);
+  //   //  Young Bernadette Peters(バーナデット・ピーターズ)
+  //   //  Cate Blanchett (ケイト・ブランシェット)
+  //   //  Meg Ryan
+  //   // Drew Barrymore (ドリュー・バリモア)
+  //   //  Audrey Hepburn (オードリー・ヘップバーン)
+
+  //   newPrompts.negative_prompt = prompts.negative_prompt.replace('$1', `man`);
+  // }
   console.log('newPrompts.prompt', newPrompts.prompt);
   // console.log('newPrompts.negative_prompt', newPrompts.negative_prompt);
 
